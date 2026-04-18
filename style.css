@@ -1,17 +1,4 @@
-/* 微信 Bot 桥接中心基础样式 */
-
-:root {
-    --zwb-surface-solid: rgba(22, 24, 29, 0.98);
-    --zwb-surface-soft: rgba(31, 34, 41, 0.96);
-    --zwb-surface-card: rgba(39, 43, 52, 0.96);
-    --zwb-surface-border: rgba(255, 255, 255, 0.15);
-    --zwb-text-main: #f3f4f7;
-    --zwb-text-subtle: rgba(243, 244, 247, 0.82);
-    --zwb-accent: #7aa2ff;
-    --zwb-accent-soft: rgba(122, 162, 255, 0.22);
-    --zwb-danger-soft: rgba(255, 99, 132, 0.18);
-    --zwb-warning-soft: rgba(255, 193, 7, 0.18);
-}
+/* 微信 Bot 桥接中心基础样式 - 终极移动端兼容版 */
 
 body.zwb-modal-open,
 html.zwb-modal-open {
@@ -19,28 +6,14 @@ html.zwb-modal-open {
     overscroll-behavior: none;
 }
 
-#toast-container {
-    z-index: 2147483600 !important;
-}
-
-.zwb-extension-settings {
-    margin-top: 8px;
-}
-
-.zwb-panel-desc {
-    font-size: 13px;
-    color: var(--zwb-text-subtle);
-    margin-bottom: 12px;
-}
-
-/* 核心布局：全屏弹性容器，纯CSS控制显隐 */
+/* 层级锁定 2500：在酒馆普通界面之上，但在酒馆系统弹窗和 Toastr 之下 */
 .zwb-modal-container {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 99999;
+    z-index: 2500; 
     background: rgba(0, 0, 0, 0.75);
     display: flex;
     align-items: center;
@@ -49,32 +22,33 @@ html.zwb-modal-open {
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     
-    /* 默认隐藏状态 */
+    /* 默认隐藏，由纯 CSS 接管动画防错 */
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
     transition: opacity 0.25s ease, visibility 0.25s ease;
 }
 
-/* 激活状态 */
 .zwb-modal-container.is-visible {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
 }
 
+/* 抛弃 CSS 变量，全部使用硬编码颜色，防止移动端内核吞掉导致全透明 */
 .zwb-modal-wrapper {
-    background: var(--zwb-surface-solid);
+    background: rgba(22, 24, 29, 0.98); 
     width: 100%;
     max-width: 900px;
-    height: 90vh; /* 限制最高90%视窗高度 */
+    height: 90vh; 
+    max-height: 900px;
     border-radius: 12px;
-    border: 1px solid var(--zwb-surface-border);
+    border: 1px solid rgba(255, 255, 255, 0.15); 
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
     position: relative;
     display: flex;
-    flex-direction: column; /* 纵向弹性排列 */
-    overflow: hidden; /* 防止溢出破坏圆角 */
+    flex-direction: column; 
+    overflow: hidden; 
 }
 
 .zwb-modal-close {
@@ -83,42 +57,41 @@ html.zwb-modal-open {
     right: 16px;
     background: transparent;
     border: none;
-    color: var(--zwb-text-subtle);
+    color: rgba(243, 244, 247, 0.82); 
     font-size: 28px;
     cursor: pointer;
     line-height: 1;
-    z-index: 10;
+    z-index: 2510;
 }
 
 .zwb-modal-close:hover {
-    color: var(--zwb-text-main);
+    color: #f3f4f7; 
 }
 
 .zwb-modal-header {
     padding: 18px 24px 12px;
-    flex-shrink: 0; /* 保证头部不被挤压 */
+    flex-shrink: 0; 
 }
 
 .zwb-modal-header h2 {
     margin: 0;
     font-size: 20px;
     font-weight: 600;
-    color: var(--zwb-text-main);
+    color: #f3f4f7; 
 }
 
 .zwb-modal-runtime {
     font-size: 12px;
-    color: var(--zwb-accent);
+    color: #7aa2ff; 
     margin-top: 6px;
 }
 
-/* 选项卡导航，支持手机端横向滑动 */
 .zwb-tab-nav {
     display: flex;
     padding: 0 16px;
-    border-bottom: 1px solid var(--zwb-surface-border);
-    background: var(--zwb-surface-soft);
-    flex-shrink: 0; /* 保证导航条不被挤压 */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15); 
+    background: rgba(31, 34, 41, 0.96); 
+    flex-shrink: 0; 
     overflow-x: auto;
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
@@ -135,7 +108,7 @@ html.zwb-modal-open {
 .zwb-tab-btn {
     background: transparent;
     border: none;
-    color: var(--zwb-text-subtle);
+    color: rgba(243, 244, 247, 0.82); 
     padding: 12px 16px;
     font-size: 14px;
     cursor: pointer;
@@ -145,20 +118,20 @@ html.zwb-modal-open {
 }
 
 .zwb-tab-btn:hover {
-    color: var(--zwb-text-main);
+    color: #f3f4f7; 
     background: rgba(255, 255, 255, 0.05);
 }
 
 .zwb-tab-btn.active {
-    color: var(--zwb-accent);
-    border-bottom-color: var(--zwb-accent);
+    color: #7aa2ff; 
+    border-bottom-color: #7aa2ff; 
 }
 
-/* 内容区：独立滚动，释放空间 */
 .zwb-tab-content {
     display: none;
-    flex-grow: 1; /* 撑满剩余高度 */
-    overflow-y: auto; /* 仅在此区域内滚动 */
+    flex-grow: 1; 
+    height: 100%;
+    overflow-y: auto; 
     padding: 20px 24px;
     -webkit-overflow-scrolling: touch;
 }
@@ -175,8 +148,8 @@ html.zwb-modal-open {
 }
 
 .zwb-card {
-    background: var(--zwb-surface-card);
-    border: 1px solid var(--zwb-surface-border);
+    background: rgba(39, 43, 52, 0.96); 
+    border: 1px solid rgba(255, 255, 255, 0.15); 
     border-radius: 8px;
     padding: 16px;
 }
@@ -184,16 +157,15 @@ html.zwb-modal-open {
 .zwb-card h3 {
     margin: 0 0 12px 0;
     font-size: 14px;
-    color: var(--zwb-text-subtle);
+    color: rgba(243, 244, 247, 0.82); 
 }
 
 .zwb-card div {
     font-size: 15px;
-    color: var(--zwb-text-main);
+    color: #f3f4f7; 
     font-weight: 500;
 }
 
-/* 并排输入框布局 */
 .zwb-form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -211,7 +183,7 @@ html.zwb-modal-open {
 
 .zwb-form-item label {
     font-size: 13px;
-    color: var(--zwb-text-subtle);
+    color: rgba(243, 244, 247, 0.82); 
     margin-bottom: 6px;
 }
 
@@ -220,7 +192,6 @@ html.zwb-modal-open {
     box-sizing: border-box;
 }
 
-/* 操作按钮组：弹性换行，节约手机纵向空间 */
 .zwb-panel-actions {
     display: flex;
     flex-wrap: wrap;
@@ -229,11 +200,11 @@ html.zwb-modal-open {
 }
 
 .zwb-panel-actions .menu_button {
-    flex: 1 1 calc(50% - 10px); /* 手机端默认两列 */
+    flex: 1 1 calc(50% - 10px); 
     margin: 0;
     min-width: 120px;
     text-align: center;
-    padding: 10px; /* 增加触摸面积 */
+    padding: 10px; 
 }
 
 .zwb-panel-actions .menu_button.full-width {
@@ -247,20 +218,21 @@ html.zwb-modal-open {
     font-size: 13px;
     line-height: 1.5;
     background: rgba(8, 10, 15, 0.78);
-    border: 1px solid var(--zwb-surface-border);
+    border: 1px solid rgba(255, 255, 255, 0.15); 
     box-sizing: border-box;
-    color: var(--zwb-text-main);
+    color: #f3f4f7; 
     resize: vertical;
 }
 
+/* ===== 移动端画幅专属适配区 ===== */
 @media (max-width: 768px) {
     .zwb-modal-container {
-        padding: 0; /* 手机端去掉外边距 */
+        padding: 0; 
     }
 
     .zwb-modal-wrapper {
-        height: 100vh;
-        height: 100dvh; /* 适配iOS的底部安全区 */
+        height: 100%; /* 使用 100% 替代 100vh，无视 iOS/Android 浏览器的地址栏下推问题 */
+        max-height: none;
         border-radius: 0;
         border: none;
     }
@@ -271,6 +243,8 @@ html.zwb-modal-open {
     
     .zwb-tab-content {
         padding: 16px;
+        /* 为下方预留安全区防止滚动不到底 */
+        padding-bottom: 40px; 
     }
 
     .zwb-json-textarea {
