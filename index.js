@@ -295,7 +295,6 @@ function 获取酒馆上下文() {
 }
 
 function 获取稳定接口(fnName) {
-    // 修复关键：直接返回匹配到的全局函数，绝对不要使用 .bind()，以免破坏酒馆函数的内部上下文
     if (typeof window !== 'undefined' && typeof window[fnName] === "function") return window[fnName];
     if (typeof window !== 'undefined' && window.SillyTavern && typeof window.SillyTavern[fnName] === "function") return window.SillyTavern[fnName];
     if (typeof window !== 'undefined' && window.TavernHelper && typeof window.TavernHelper[fnName] === "function") return window.TavernHelper[fnName];
@@ -381,6 +380,7 @@ async function 刷新MEMORYMarkdown与世界书() {
     await 刷新世界书条目显示(select.val());
 }
 
+// ========= 修复1：两步走抓取世界书条目 UI =========
 async function 刷新世界书条目显示(worldbookName) {
     const container = $("#zwb_worldbook_entries");
     container.empty();
@@ -390,24 +390,58 @@ async function 刷新世界书条目显示(worldbookName) {
         return;
     }
 
+    container.append('<div style="font-size:13px; color:#666; margin-bottom:8px;">正在读取世界书条目...</div>');
     const entries = await 读取世界书条目(worldbookName);
+    container.empty();
+
     if (!entries.length) {
         container.text("当前世界书没有可用条目。");
         return;
     }
 
+    // 创建条目复选框列表
+    const checkboxContainer = $('<div class="zwb-wb-checkboxes" style="max-height: 180px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.2); padding: 8px; margin-bottom: 10px; border-radius: 5px;"></div>');
+    
     entries.forEach((entry, index) => {
-        const title = entry.comment || entry.name || entry.key || `条目 ${index + 1}`;
-        const item = $(
-            `<div class="zwb-worldbook-entry">
-                <div class="zwb-worldbook-entry-title">${title}</div>
-                <div class="zwb-worldbook-entry-preview"></div>
-                <button class="menu_button zwb-append-worldbook-btn" type="button">追加到 MEMORY.md</button>
-            </div>`
-        );
-        item.find(".zwb-worldbook-entry-preview").text((entry.content || entry.entry || entry.text || "").slice(0, 220) || "无正文");
-        item.find(".zwb-append-worldbook-btn").attr("data-entry-json", encodeURIComponent(JSON.stringify(entry)));
-        container.append(item);
+        const title = entry.comment || entry.name || (Array.isArray(entry.key) ? entry.key.join('、') : entry.key) || `无名条目 ${index + 1}`;
+        const safeTitle = title.length > 40 ? title.substring(0, 40) + '...' : title;
+        const checkboxHtml = `
+            <label style="display: block; margin-bottom: 6px; cursor: pointer; font-size: 13px; color: var(--SmartThemeBodyColor);">
+                <input type="checkbox" class="zwb-wb-entry-checkbox" data-index="${index}" style="margin-right: 6px; cursor: pointer;">
+                ${safeTitle}
+            </label>
+        `;
+        checkboxContainer.append(checkboxHtml);
+    });
+
+    // 选中的内容预览区
+    const previewArea = $('<div id="zwb_wb_preview_area" class="text_pole zwb-json-textarea" style="white-space: pre-wrap; font-size: 12px; height: 160px; overflow-y: auto; margin-bottom: 10px; display: none;" readonly></div>');
+    
+    // 追加按钮
+    const actionBtn = $('<button id="zwb_append_selected_wb_btn" class="menu_button" type="button" style="display: none;">👇 追加选中的设定到下方 MEMORY.md 👇</button>');
+
+    container.append(checkboxContainer);
+    container.append(previewArea);
+    container.append(actionBtn);
+
+    // 监听复选框变化
+    container.on('change', '.zwb-wb-entry-checkbox', function() {
+        const selectedIndexes = [];
+        container.find('.zwb-wb-entry-checkbox:checked').each(function() {
+            selectedIndexes.push(Number($(this).data('index')));
+        });
+
+        if (selectedIndexes.length > 0) {
+            let previewText = "";
+            selectedIndexes.forEach(idx => {
+                previewText += 格式化世界书条目(entries[idx]) + "\n\n";
+            });
+            previewArea.text(previewText.trim()).show();
+            actionBtn.show().data('selected-entries', selectedIndexes.map(idx => entries[idx]));
+        } else {
+            previewArea.hide();
+            actionBtn.hide();
+        }
     });
 }
 
@@ -505,54 +539,88 @@ function 生成User候选文本(userInfo) {
     return `# USER.md - 自动生成候选\n\n- **Name:** ${userInfo.name || "User"}\n\n---\n\n## 你的基础设定\n${userInfo.description || ""}\n\n## 他的参考备注\n这里可以补充你的习惯、边界、称呼偏好、作息、雷点等。`.trim();
 }
 
+
+// ========= 修复2：人类友好的历史记录格式化与解析 =========
+
+function 格式化单条消息(item, index) {
+    let role = "NPC";
+    if (item.is_system) role = "System";
+    else if (item.is_user) role = "User";
+
+    let d = new Date(item.send_date || Date.now());
+    if (isNaN(d.getTime())) d = new Date();
+    
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    
+    return `# ${index}\n${dateStr}\n${timeStr}\n${item.name || "未命名"} (${role})：\n${item.mes || item.raw || ""}`;
+}
+
 function 友好化Jsonl内容(payload) {
     const metadataText = JSON.stringify(payload?.metadata || {}, null, 2);
-    const itemTexts = (payload?.items || []).map((item, index) => {
-        const head = `---ITEM ${index + 1}---`;
-        const body = [
-            `name: ${item.name ?? ""}`,
-            `is_user: ${item.is_user ?? false}`,
-            `is_system: ${item.is_system ?? false}`,
-            `send_date: ${item.send_date ?? ""}`,
-            "mes:",
-            item.mes ?? item.raw ?? "",
-            "---END ITEM---",
-        ].join("\n");
-        return `${head}\n${body}`;
-    });
-    return [`#METADATA`, metadataText, `#MESSAGES`, ...itemTexts].join("\n\n");
+    const itemTexts = (payload?.items || []).map((item, index) => 格式化单条消息(item, index + 1));
+    return [`#METADATA\n${metadataText}`, `#MESSAGES`, ...itemTexts].join("\n\n");
+}
+
+function 友好化酒馆消息列表(messages) {
+    const items = 酒馆消息转微信记忆项(messages);
+    return items.map((item, index) => 格式化单条消息(item, index + 1)).join("\n\n");
 }
 
 function 解析友好Jsonl文本(text) {
     const source = String(text || "");
     const metadataMatch = source.match(/#METADATA\s+([\s\S]*?)\s+#MESSAGES/);
     let metadata = {};
+    
     if (metadataMatch) {
-        metadata = JSON.parse(metadataMatch[1].trim() || "{}");
+        try { metadata = JSON.parse(metadataMatch[1].trim() || "{}"); } catch(e) {}
     }
 
-    const messageBlocks = source.split("---ITEM ").slice(1);
-    const items = messageBlocks.map(block => {
-        const content = block.replace(/^\d+---\n/, "");
-        const endIndex = content.lastIndexOf("---END ITEM---");
-        const raw = endIndex >= 0 ? content.slice(0, endIndex).trim() : content.trim();
-        const lines = raw.split("\n");
-        const nameLine = lines.find(line => line.startsWith("name:")) || "name: ";
-        const userLine = lines.find(line => line.startsWith("is_user:")) || "is_user: false";
-        const systemLine = lines.find(line => line.startsWith("is_system:")) || "is_system: false";
-        const dateLine = lines.find(line => line.startsWith("send_date:")) || "send_date: ";
-        const mesIndex = lines.findIndex(line => line === "mes:");
-        const mes = mesIndex >= 0 ? lines.slice(mesIndex + 1).join("\n") : "";
+    const messagesText = source.includes('#MESSAGES') ? source.split('#MESSAGES')[1] : source;
+    // 按块分割，兼顾不同环境换行符
+    const blocks = messagesText.split(/\n?(?:^# \d+\r?\n)/m).filter(b => b.trim());
+    
+    const items = blocks.map(block => {
+        const lines = block.trim().split('\n');
+        let send_date = new Date().toISOString();
+        let name = "未命名";
+        let is_user = false;
+        let is_system = false;
+        let mesLines = [];
+
+        if (lines.length >= 4) {
+            const dateStr = lines[0].trim();
+            const timeStr = lines[1].trim();
+            try { send_date = new Date(`${dateStr}T${timeStr}:00`).toISOString(); } catch(e) {}
+            
+            const nameLine = lines[2].trim(); 
+            const roleMatch = nameLine.match(/(.*?)\s*\((NPC|User|System)\)[\:：]?$/);
+            
+            if (roleMatch) {
+                name = roleMatch[1].trim();
+                if (roleMatch[2] === 'User') is_user = true;
+                if (roleMatch[2] === 'System') is_system = true;
+            } else {
+                name = nameLine.replace(/[\:：]$/, '').trim();
+            }
+            
+            mesLines = lines.slice(3);
+        } else {
+            mesLines = lines; // 格式破损时的备用兼容
+        }
+
         return {
-            name: nameLine.replace(/^name:\s*/, ""),
-            is_user: userLine.replace(/^is_user:\s*/, "") === "true",
-            is_system: systemLine.replace(/^is_system:\s*/, "") === "true",
-            send_date: dateLine.replace(/^send_date:\s*/, ""),
-            mes,
+            name,
+            is_user,
+            is_system,
+            send_date,
+            mes: mesLines.join('\n').trim()
         };
     });
+
     return { metadata, items };
 }
+
 
 async function 检测连接状态() {
     const statusElement = $("#zwb_status_hint");
@@ -746,7 +814,43 @@ async function 刷新备份列表() {
     });
 }
 
+// ========= 修复3：注入并刷新“酒馆历史与微信历史”双向独立 UI =========
+function 渲染双向历史UI() {
+    // 如果还没注入酒馆聊天编辑器，就注入在微信编辑器下面
+    if ($("#zwb_st_chat_preview_editor").length === 0) {
+        const wechatEditorContainer = $("#zwb_memory_preview_editor").closest(".zwb-form-item-full");
+        if (wechatEditorContainer.length) {
+            // 给原来的编辑器加上提示标识
+            wechatEditorContainer.find("label").text("微信 Bot 历史记忆（可在此修改后保存或导入酒馆）");
+            
+            // 注入新的酒馆记录文本框
+            const stChatHtml = `
+            <div class="zwb-form-item-full" style="margin-top: 25px; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 20px;">
+                <label style="color: #4CAF50; font-weight: bold; font-size: 14px;">酒馆当前聊天历史（可在下方编辑修剪后导入上面的微信记忆）</label>
+                <textarea id="zwb_st_chat_preview_editor" class="text_pole zwb-json-textarea" style="height: 300px; margin-bottom: 10px;" placeholder="酒馆聊天记录将在此显示..."></textarea>
+                <div class="zwb-panel-actions">
+                    <button id="zwb_refresh_st_chat_btn" class="menu_button" type="button">↻ 刷新酒馆历史</button>
+                    <button id="zwb_import_st_to_wechat_btn" class="menu_button" type="button" style="background-color: #2e8b57; color: white;">↑ 将修剪后的酒馆历史导入左侧选中的微信文件 ↑</button>
+                </div>
+            </div>`;
+            wechatEditorContainer.after(stChatHtml);
+        }
+    }
+    
+    // 把微信导入酒馆的按钮换个高亮的词
+    $("#zwb_import_wechat_memory_to_st_btn").text("↓ 将上方微信记忆导入当前酒馆聊天 ↓").css({"background-color": "#5e5c8a", "color": "white"});
+}
+
+function 刷新酒馆聊天显示() {
+    if ($("#zwb_st_chat_preview_editor").length === 0) return;
+    const messages = 获取当前聊天消息列表();
+    const formatted = 友好化酒馆消息列表(messages);
+    $("#zwb_st_chat_preview_editor").val(formatted || "当前酒馆聊天记录为空...");
+}
+
+
 async function 加载全部核心数据() {
+    渲染双向历史UI();
     await 检测连接状态();
     await 刷新总览信息();
     await 读取基础配置();
@@ -762,6 +866,7 @@ async function 加载全部核心数据() {
         await 打开Summary文件(当前记忆列表.summary_logs[0].name);
     }
     await 刷新备份列表();
+    刷新酒馆聊天显示();
 }
 
 function 配置提示层() {
@@ -940,27 +1045,36 @@ function 绑定按钮事件() {
         }
     });
 
-    $("body").on("click", "#zwb_import_st_chat_to_wechat_btn", async () => {
+    
+    // ======== 互导按钮逻辑修改：使用文本框内容而不是直接强制抓取 ========
+    
+    $("body").on("click", "#zwb_refresh_st_chat_btn", () => {
+        刷新酒馆聊天显示();
+        toastr.success("酒馆聊天历史已刷新");
+    });
+
+    $("body").on("click", "#zwb_import_st_to_wechat_btn", async () => {
         try {
             const fileName = String($("#zwb_memory_file_input").val() || "").trim();
             if (!fileName) {
                 return toastr.warning("请先在左侧选择一个微信 Memory 文件，再执行导入");
             }
-            const messages = 获取当前聊天消息列表();
-            const converted = 酒馆消息转微信记忆项(messages);
-            if (!converted.length) {
-                return toastr.warning("当前酒馆聊天没有可导入内容");
+            
+            // 解析用户手动修剪过的下方的酒馆历史
+            const parsed = 解析友好Jsonl文本($("#zwb_st_chat_preview_editor").val());
+            if (!parsed.items || !parsed.items.length) {
+                return toastr.warning("没有任何能识别的消息，请检查文本框内容格式。");
             }
-            const metadata = {
-                imported_from: "sillytavern_current_chat",
-                imported_at: new Date().toISOString(),
-                source_chat_id: 获取酒馆上下文()?.chatId || window.SillyTavern?.chatId || "unknown",
-            };
-            await 请求接口("/memory/save", { body: { file_name: fileName, metadata, items: converted } });
-            $("#zwb_chat_exchange_log").val(`已把当前酒馆聊天导入到微信 Memory：${fileName}\n共写入 ${converted.length} 条消息。`);
+
+            const metadata = 当前记忆文件数据?.metadata || {};
+            metadata.imported_from = "sillytavern_current_chat";
+            metadata.imported_at = new Date().toISOString();
+            metadata.source_chat_id = 获取酒馆上下文()?.chatId || window.SillyTavern?.chatId || "unknown";
+            
+            await 请求接口("/memory/save", { body: { file_name: fileName, metadata, items: parsed.items } });
             await 打开记忆文件(fileName);
             await 读取记忆列表();
-            toastr.success("当前酒馆聊天已导入微信插件");
+            toastr.success(`已成功把修剪过的 ${parsed.items.length} 条酒馆消息写入微信：${fileName}`);
         } catch (error) {
             toastr.error(`导入到微信 Memory 失败：${error.message}`);
         }
@@ -972,20 +1086,22 @@ function 绑定按钮事件() {
             if (!creator) {
                 return toastr.error("当前酒馆环境没有可用的聊天写入接口");
             }
-            if (!当前记忆文件数据 || !(当前记忆文件数据.items || []).length) {
-                return toastr.warning("请先打开一个微信 Memory 文件，再导入到酒馆");
+            
+            // 解析上方微信记录输入框中的内容
+            const parsed = 解析友好Jsonl文本($("#zwb_memory_preview_editor").val());
+            if (!parsed.items || !parsed.items.length) {
+                return toastr.warning("上方微信记忆输入框中没有可识别的消息");
             }
-            const converted = 微信记忆转酒馆消息(当前记忆文件数据.items || []);
-            if (!converted.length) {
-                return toastr.warning("当前微信 Memory 没有可导入到酒馆的消息");
-            }
+            
+            const converted = 微信记忆转酒馆消息(parsed.items);
             await creator(converted, { insert_before: "end", refresh: "all" });
-            $("#zwb_chat_exchange_log").val(`已把当前微信 Memory 追加导入到酒馆聊天。\n来源文件：${$("#zwb_memory_file_input").val() || "未命名"}\n共追加 ${converted.length} 条消息。`);
-            toastr.success("当前微信 Memory 已追加导入酒馆");
+            刷新酒馆聊天显示();
+            toastr.success(`成功将上方编辑过的 ${converted.length} 条微信消息追加到酒馆聊天末尾！`);
         } catch (error) {
             toastr.error(`导入到酒馆聊天失败：${error.message}`);
         }
     });
+
 
     $("body").on("click", ".zwb-memory-open-btn", async function () {
         try {
@@ -1036,13 +1152,16 @@ function 绑定按钮事件() {
         }
     });
 
-    $("body").on("click", ".zwb-append-worldbook-btn", function () {
+    $("body").on("click", "#zwb_append_selected_wb_btn", function () {
         try {
-            const entry = JSON.parse(decodeURIComponent($(this).attr("data-entry-json") || "{}"));
+            const selectedEntries = $(this).data('selected-entries') || [];
+            if (!selectedEntries.length) return toastr.warning("没有勾选需要追加的条目");
+            
             const currentText = String($("#zwb_memory_markdown_editor").val() || "").trim();
-            const entryText = 格式化世界书条目(entry);
-            $("#zwb_memory_markdown_editor").val([currentText, entryText].filter(Boolean).join("\n\n"));
-            toastr.success("已将世界书条目追加到 MEMORY.md 编辑区");
+            const newTexts = selectedEntries.map(entry => 格式化世界书条目(entry));
+            
+            $("#zwb_memory_markdown_editor").val([currentText, ...newTexts].filter(Boolean).join("\n\n"));
+            toastr.success(`已将 ${selectedEntries.length} 个条目追加到 MEMORY.md 编辑区，记得点击保存！`);
         } catch (error) {
             toastr.error(`追加世界书条目失败：${error.message}`);
         }
