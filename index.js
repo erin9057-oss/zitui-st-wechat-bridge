@@ -861,10 +861,24 @@ function 配置提示层() {
     };
 }
 
-// 弹窗显隐控制不再使用 jQuery 的 .css() 强行改 display，改用纯 CSS class 稳定过渡
+function 模态框模板有效(html) {
+    const text = String(html || "");
+    return text.includes('id="zwb_modal_container"') && text.includes('class="zwb-modal-wrapper"');
+}
+
+function 当前模态框骨架有效() {
+    const modal = $("#zwb_modal_container");
+    return modal.length > 0 && modal.find(".zwb-modal-wrapper").length > 0 && modal.find(".zwb-tab-content").length > 0;
+}
+
 function 显示桥接中心模态框() {
+    if (!当前模态框骨架有效()) {
+        toastr.error("桥接中心模板未正确加载，请刷新扩展后重试");
+        return false;
+    }
     $("html, body").addClass("zwb-modal-open");
     $("#zwb_modal_container").addClass("is-visible");
+    return true;
 }
 
 function 隐藏桥接中心模态框() {
@@ -872,14 +886,40 @@ function 隐藏桥接中心模态框() {
     $("html, body").removeClass("zwb-modal-open");
 }
 
+function 清理已注入界面() {
+    $("#zwb_modal_container").remove();
+}
+
+function 绑定备份按钮事件() {
+    $("body").on("click", "#zwb_backup_now_btn", async () => {
+        try {
+            const result = await 请求接口("/backup/create");
+            toastr.success(result.message || "备份已创建");
+            await 刷新备份列表();
+        } catch (error) {
+            toastr.error(`创建备份失败：${error.message}`);
+        }
+    });
+
+    $("body").on("click", "#zwb_refresh_backup_btn", async () => {
+        try {
+            await 刷新备份列表();
+            toastr.success("备份列表已刷新");
+        } catch (error) {
+            toastr.error(`读取失败：${error.message}`);
+        }
+    });
+}
+
 function 绑定模态框事件() {
     $("body").on("click", "#zwb_open_modal_btn", async (event) => {
         event.preventDefault();
         event.stopPropagation();
         
-        // 瞬间无阻碍弹出 UI
-        显示桥接中心模态框();
-        
+        if (!显示桥接中心模态框()) {
+            return;
+        }
+
         try {
             await 加载全部核心数据();
             toastr.success("桥接中心加载完毕（即使部分失败界面也可使用）");
@@ -1183,25 +1223,6 @@ function 绑定按钮事件() {
         }
     });
 
-    $("#zwb_backup_now_btn").on("click", async () => {
-        try {
-            const result = await 请求接口("/backup/create");
-            toastr.success(result.message || "备份已创建");
-            await 刷新备份列表();
-        } catch (error) {
-            toastr.error(`创建备份失败：${error.message}`);
-        }
-    });
-
-    $("#zwb_refresh_backup_btn").on("click", async () => {
-        try {
-            await 刷新备份列表();
-            toastr.success("备份列表已刷新");
-        } catch (error) {
-            toastr.error(`读取失败：${error.message}`);
-        }
-    });
-
     $("body").on("click", "#zwb_restore_backup_btn", async () => {
         try {
             const backupName = String($("#zwb_backup_restore_select").val() || "").trim();
@@ -1219,12 +1240,27 @@ function 绑定按钮事件() {
 async function 初始化界面() {
     const panelHtml = await $.get(`${extensionFolderPath}/templates/panel.html`);
     const modalHtml = await $.get(`${extensionFolderPath}/templates/modal.html`);
-    $("#extensions_settings").append(panelHtml);
+
+    if (!模态框模板有效(modalHtml)) {
+        throw new Error("templates/modal.html 不是有效的桥接中心 HTML 模板");
+    }
+
+    if (!$("#zwb_open_modal_btn").length) {
+        $("#extensions_settings").append(panelHtml);
+    }
+
+    清理已注入界面();
     $("body").append(modalHtml);
+
+    if (!当前模态框骨架有效()) {
+        throw new Error("桥接中心模板注入后未生成有效面板骨架");
+    }
+
     渲染设置到界面();
     绑定设置事件();
     绑定模态框事件();
     绑定按钮事件();
+    绑定备份按钮事件();
 }
 
 jQuery(async () => {
