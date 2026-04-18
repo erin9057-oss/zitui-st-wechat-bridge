@@ -67,14 +67,16 @@ html.zwb-modal-open {
     background: var(--zwb-surface-solid);
     width: 100%;
     max-width: 900px;
-    height: 90vh; /* 限制最高90%视窗高度 */
+    height: 90vh;
+    max-height: calc(100vh - 40px);
     border-radius: 12px;
     border: 1px solid var(--zwb-surface-border);
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
     position: relative;
     display: flex;
-    flex-direction: column; /* 纵向弹性排列 */
-    overflow: hidden; /* 防止溢出破坏圆角 */
+    flex-direction: column;
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 .zwb-modal-close {
@@ -255,26 +257,45 @@ html.zwb-modal-open {
 
 @media (max-width: 768px) {
     .zwb-modal-container {
-        padding: 0; /* 手机端去掉外边距 */
+        padding: 0;
+        align-items: flex-start;
+        justify-content: flex-start;
+        overflow-y: auto;
+        overscroll-behavior: contain;
     }
 
     .zwb-modal-wrapper {
-        height: 100vh;
-        height: 100dvh; /* 适配iOS的底部安全区 */
+        width: 100%;
+        min-height: 100vh;
+        min-height: 100dvh;
+        height: auto;
+        max-height: none;
         border-radius: 0;
         border: none;
+        margin: 0;
+    }
+
+    .zwb-modal-close {
+        top: calc(12px + env(safe-area-inset-top, 0px));
+        right: max(16px, env(safe-area-inset-right, 0px));
     }
 
     .zwb-modal-header {
-        padding: 14px 16px 8px;
+        padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 8px;
+    }
+
+    .zwb-tab-nav {
+        padding-left: 16px;
+        padding-right: 16px;
     }
     
     .zwb-tab-content {
-        padding: 16px;
+        min-height: 0;
+        padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px));
     }
 
     .zwb-json-textarea {
-        height: 25vh !important; 
+        height: 25vh !important;
         min-height: 150px;
     }
 }
