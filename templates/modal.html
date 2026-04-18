@@ -1,280 +1,199 @@
-/* 微信 Bot 桥接中心基础样式 */
+<div id="zwb_modal_container" class="zwb-modal-container">
+    <div class="zwb-modal-wrapper">
+        <button id="zwb_modal_close" class="zwb-modal-close" type="button">×</button>
+        <div class="zwb-modal-header">
+            <h2>微信 Bot 桥接中心</h2>
+            <div id="zwb_modal_runtime" class="zwb-modal-runtime">正在初始化状态...</div>
+        </div>
 
-:root {
-    --zwb-surface-solid: rgba(22, 24, 29, 0.98);
-    --zwb-surface-soft: rgba(31, 34, 41, 0.96);
-    --zwb-surface-card: rgba(39, 43, 52, 0.96);
-    --zwb-surface-border: rgba(255, 255, 255, 0.15);
-    --zwb-text-main: #f3f4f7;
-    --zwb-text-subtle: rgba(243, 244, 247, 0.82);
-    --zwb-accent: #7aa2ff;
-    --zwb-accent-soft: rgba(122, 162, 255, 0.22);
-    --zwb-danger-soft: rgba(255, 99, 132, 0.18);
-    --zwb-warning-soft: rgba(255, 193, 7, 0.18);
-}
+        <div class="zwb-tab-nav">
+            <button class="zwb-tab-btn active" data-tab="tab-overview">总览</button>
+            <button class="zwb-tab-btn" data-tab="tab-config">基础配置</button>
+            <button class="zwb-tab-btn" data-tab="tab-runtime">运行策略</button>
+            <button class="zwb-tab-btn" data-tab="tab-character">角色导入</button>
+            <button class="zwb-tab-btn" data-tab="tab-user">User 导入</button>
+            <button class="zwb-tab-btn" data-tab="tab-memory">记忆管理</button>
+            <button class="zwb-tab-btn" data-tab="tab-sensor">Sensor 管理</button>
+            <button class="zwb-tab-btn" data-tab="tab-backup">备份恢复</button>
+        </div>
 
-body.zwb-modal-open,
-html.zwb-modal-open {
-    overflow: hidden !important;
-    overscroll-behavior: none;
-}
+        <div class="zwb-tab-content active" id="tab-overview">
+            <div class="zwb-card-grid">
+                <div class="zwb-card">
+                    <h3>当前工作模式</h3>
+                    <div id="zwb_mode_badge">检测中...</div>
+                </div>
+                <div class="zwb-card">
+                    <h3>活跃记忆文件</h3>
+                    <div id="zwb_active_memory">检测中...</div>
+                </div>
+                <div class="zwb-card">
+                    <h3>健康状态</h3>
+                    <div id="zwb_overview_status">检测中...</div>
+                </div>
+            </div>
+            <div class="zwb-panel-actions">
+                <button id="zwb_ping_btn" class="menu_button full-width" type="button">测试微信 Bot 连接</button>
+            </div>
+        </div>
 
-#toast-container {
-    z-index: 2147483600 !important;
-}
+        <div class="zwb-tab-content" id="tab-config">
+            <div id="zwb_config_form" class="zwb-form-grid"></div>
+        </div>
 
-.zwb-extension-settings {
-    margin-top: 8px;
-}
+        <div class="zwb-tab-content" id="tab-runtime">
+            <div id="zwb_runtime_form" class="zwb-form-grid"></div>
+        </div>
 
-.zwb-panel-desc {
-    font-size: 13px;
-    color: var(--zwb-text-subtle);
-    margin-bottom: 12px;
-}
+        <div class="zwb-tab-content" id="tab-character">
+            <div class="zwb-form-grid">
+                <div class="zwb-form-item zwb-form-item-full">
+                    <label>写入目标文件</label>
+                    <select id="zwb_character_target_select" class="text_pole">
+                        <option value="identity">IDENTITY.md (主控人格/基础设定)</option>
+                        <option value="soul">SOUL.md (灵魂与记忆补充)</option>
+                    </select>
+                </div>
+                <div class="zwb-form-item">
+                    <label>角色 Name（必填）</label>
+                    <input id="zwb_character_name_input" class="text_pole" type="text" placeholder="例如：顾时夜" />
+                </div>
+                <div class="zwb-form-item zwb-form-item-full">
+                    <label>草稿与预览区</label>
+                    <textarea id="zwb_character_preview_editor" class="text_pole zwb-json-textarea"></textarea>
+                </div>
+                <div class="zwb-panel-actions">
+                    <button id="zwb_generate_identity_btn" class="menu_button" type="button">提取酒馆卡片并生成 IDENTITY 草稿</button>
+                    <button id="zwb_generate_soul_btn" class="menu_button" type="button">提取酒馆卡片并生成 SOUL 草稿</button>
+                    <button id="zwb_save_character_btn" class="menu_button full-width" type="button" style="background:#5e5c8a; color:white;">💾 保存修改到目标文件</button>
+                </div>
+                <div class="zwb-form-item zwb-form-item-full" style="margin-top: 15px;">
+                    <label>微信 Bot 当前实际内容参考</label>
+                    <textarea id="zwb_character_current" class="text_pole zwb-json-textarea" readonly></textarea>
+                </div>
+            </div>
+        </div>
 
-/* 核心布局：全屏弹性容器，纯CSS控制显隐 */
-.zwb-modal-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 99999;
-    background: rgba(0, 0, 0, 0.75);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    
-    /* 默认隐藏状态 */
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition: opacity 0.25s ease, visibility 0.25s ease;
-}
+        <div class="zwb-tab-content" id="tab-user">
+             <div class="zwb-form-grid">
+                <div class="zwb-form-item">
+                    <label>User Name（必填）</label>
+                    <input id="zwb_user_name_input" class="text_pole" type="text" placeholder="你的名字" />
+                </div>
+                <div class="zwb-form-item zwb-form-item-full">
+                    <label>User 草稿预览区</label>
+                    <textarea id="zwb_user_preview_editor" class="text_pole zwb-json-textarea"></textarea>
+                </div>
+                <div class="zwb-panel-actions">
+                    <button id="zwb_generate_user_btn" class="menu_button" type="button">提取酒馆 User 并生成草稿</button>
+                    <button id="zwb_save_user_btn" class="menu_button" type="button" style="background:#5e5c8a; color:white;">💾 保存修改到 USER.md</button>
+                </div>
+                <div class="zwb-form-item zwb-form-item-full" style="margin-top: 15px;">
+                    <label>微信 Bot 当前 USER.md 内容</label>
+                    <textarea id="zwb_user_current" class="text_pole zwb-json-textarea" readonly></textarea>
+                </div>
+            </div>
+        </div>
 
-/* 激活状态 */
-.zwb-modal-container.is-visible {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-}
+        <div class="zwb-tab-content" id="tab-memory">
+            <div class="zwb-card-grid">
+                <div class="zwb-card">
+                    <h3>微信可用记忆文件 (Full Logs)</h3>
+                    <div id="zwb_memory_list" class="zwb-list-box" style="max-height:100px; overflow-y:auto;">加载中...</div>
+                </div>
+            </div>
 
-.zwb-modal-wrapper {
-    background: var(--zwb-surface-solid);
-    width: 100%;
-    max-width: 900px;
-    height: 90vh; /* 限制最高90%视窗高度 */
-    border-radius: 12px;
-    border: 1px solid var(--zwb-surface-border);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
-    position: relative;
-    display: flex;
-    flex-direction: column; /* 纵向弹性排列 */
-    overflow: hidden; /* 防止溢出破坏圆角 */
-}
+            <div class="zwb-form-item zwb-form-item-full" style="margin-bottom: 15px;">
+                <label>正在浏览的微信文件</label>
+                <input id="zwb_memory_file_input" class="text_pole" type="text" readonly style="margin-bottom: 5px;"/>
+                <div class="zwb-panel-actions">
+                    <button id="zwb_reload_memory_btn" class="menu_button" type="button">↻ 刷新左侧列表</button>
+                    <button id="zwb_activate_memory_btn" class="menu_button" type="button">★ 设为当前启用</button>
+                    <button id="zwb_save_memory_btn" class="menu_button" type="button" style="background:#8b4513; color:white;">💾 保存【上区】修改</button>
+                </div>
+            </div>
 
-.zwb-modal-close {
-    position: absolute;
-    top: 12px;
-    right: 16px;
-    background: transparent;
-    border: none;
-    color: var(--zwb-text-subtle);
-    font-size: 28px;
-    cursor: pointer;
-    line-height: 1;
-    z-index: 10;
-}
+            <div class="zwb-form-item zwb-form-item-full">
+                <label style="color: #7aa2ff; font-weight: bold; font-size: 14px;">【上区】微信 Bot 历史记忆（修改后保存或导入下区）</label>
+                <textarea id="zwb_memory_preview_editor" class="text_pole zwb-json-textarea" style="margin-bottom: 5px;"></textarea>
+                <div class="zwb-panel-actions">
+                    <button id="zwb_import_wechat_memory_to_st_btn" class="menu_button full-width" type="button" style="background-color: #5e5c8a; color: white;">↓ 将上方微信记忆【追加写入】当前酒馆聊天 ↓</button>
+                </div>
+            </div>
 
-.zwb-modal-close:hover {
-    color: var(--zwb-text-main);
-}
+            <div class="zwb-form-item zwb-form-item-full" style="margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 15px;">
+                <label style="color: #4CAF50; font-weight: bold; font-size: 14px;">【下区】酒馆当前聊天历史（修剪后导入上面的微信文件）</label>
+                <textarea id="zwb_st_chat_preview_editor" class="text_pole zwb-json-textarea" placeholder="酒馆聊天记录将在此显示..." style="margin-bottom: 5px;"></textarea>
+                <div class="zwb-panel-actions">
+                    <button id="zwb_refresh_st_chat_btn" class="menu_button" type="button">↻ 刷新获取酒馆最新历史</button>
+                    <button id="zwb_import_st_to_wechat_btn" class="menu_button" type="button" style="background-color: #2e8b57; color: white;">↑ 将下区酒馆记录【覆盖写入】上方的微信文件 ↑</button>
+                </div>
+            </div>
 
-.zwb-modal-header {
-    padding: 18px 24px 12px;
-    flex-shrink: 0; /* 保证头部不被挤压 */
-}
+            <div class="zwb-form-item zwb-form-item-full" style="margin-top: 25px; border-top: 2px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                <label style="font-weight:bold; color:var(--zwb-text-main);">MEMORY.md 编辑区（常驻背景/世界书设定）</label>
+                <textarea id="zwb_memory_markdown_editor" class="text_pole zwb-json-textarea" placeholder="MEMORY.md 的内容会在这里显示..." style="margin-bottom: 5px;"></textarea>
+                <div class="zwb-panel-actions">
+                    <button id="zwb_save_memory_markdown_btn" class="menu_button full-width" type="button" style="background:#5e5c8a; color:white;">💾 保存修改至 MEMORY.md</button>
+                </div>
+            </div>
 
-.zwb-modal-header h2 {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--zwb-text-main);
-}
+            <div class="zwb-form-item zwb-form-item-full" style="margin-top: 15px;">
+                <label>1. 勾选世界书（支持多选）</label>
+                <div id="zwb_worldbook_names_container" class="zwb-list-box" style="max-height: 120px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 8px; border: 1px solid var(--zwb-surface-border);">加载中...</div>
+                
+                <label style="margin-top: 10px;">2. 选择设定条目</label>
+                <div id="zwb_worldbook_entries" class="zwb-worldbook-entries-list"></div>
+            </div>
+        </div>
 
-.zwb-modal-runtime {
-    font-size: 12px;
-    color: var(--zwb-accent);
-    margin-top: 6px;
-}
+        <div class="zwb-tab-content" id="tab-summary">
+            <div class="zwb-card-grid">
+                <div class="zwb-card">
+                    <h3>微信 Summary 日记文件</h3>
+                    <div id="zwb_summary_list" class="zwb-list-box">加载中...</div>
+                </div>
+            </div>
+            <div class="zwb-form-item zwb-form-item-full">
+                <label>日记内容预览</label>
+                <textarea id="zwb_summary_preview_editor" class="text_pole zwb-json-textarea" readonly></textarea>
+            </div>
+        </div>
 
-/* 选项卡导航，支持手机端横向滑动 */
-.zwb-tab-nav {
-    display: flex;
-    padding: 0 16px;
-    border-bottom: 1px solid var(--zwb-surface-border);
-    background: var(--zwb-surface-soft);
-    flex-shrink: 0; /* 保证导航条不被挤压 */
-    overflow-x: auto;
-    white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
-}
+        <div class="zwb-tab-content" id="tab-sensor">
+            <div class="zwb-form-grid">
+                <div class="zwb-form-item zwb-form-item-full">
+                    <label>配置传感器 APP 的理解倾向</label>
+                    <div id="zwb_sensor_map_editor"></div>
+                    <div class="zwb-panel-actions">
+                        <button id="zwb_add_sensor_row_btn" class="menu_button" type="button">新增映射</button>
+                        <button id="zwb_save_sensor_map_btn" class="menu_button" type="button">保存配置</button>
+                        <button id="zwb_reload_sensor_map_btn" class="menu_button" type="button">重新读取</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-.zwb-tab-nav::-webkit-scrollbar {
-    height: 4px;
-}
-.zwb-tab-nav::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 2px;
-}
-
-.zwb-tab-btn {
-    background: transparent;
-    border: none;
-    color: var(--zwb-text-subtle);
-    padding: 12px 16px;
-    font-size: 14px;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-    outline: none;
-}
-
-.zwb-tab-btn:hover {
-    color: var(--zwb-text-main);
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.zwb-tab-btn.active {
-    color: var(--zwb-accent);
-    border-bottom-color: var(--zwb-accent);
-}
-
-/* 内容区：独立滚动，释放空间 */
-.zwb-tab-content {
-    display: none;
-    flex-grow: 1; /* 撑满剩余高度 */
-    overflow-y: auto; /* 仅在此区域内滚动 */
-    padding: 20px 24px;
-    -webkit-overflow-scrolling: touch;
-}
-
-.zwb-tab-content.active {
-    display: block;
-}
-
-.zwb-card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 16px;
-    margin-bottom: 24px;
-}
-
-.zwb-card {
-    background: var(--zwb-surface-card);
-    border: 1px solid var(--zwb-surface-border);
-    border-radius: 8px;
-    padding: 16px;
-}
-
-.zwb-card h3 {
-    margin: 0 0 12px 0;
-    font-size: 14px;
-    color: var(--zwb-text-subtle);
-}
-
-.zwb-card div {
-    font-size: 15px;
-    color: var(--zwb-text-main);
-    font-weight: 500;
-}
-
-/* 并排输入框布局 */
-.zwb-form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 16px;
-}
-
-.zwb-form-item {
-    display: flex;
-    flex-direction: column;
-}
-
-.zwb-form-item-full {
-    grid-column: 1 / -1;
-}
-
-.zwb-form-item label {
-    font-size: 13px;
-    color: var(--zwb-text-subtle);
-    margin-bottom: 6px;
-}
-
-.zwb-form-item .text_pole {
-    width: 100%;
-    box-sizing: border-box;
-}
-
-/* 操作按钮组：弹性换行，节约手机纵向空间 */
-.zwb-panel-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 12px;
-}
-
-.zwb-panel-actions .menu_button {
-    flex: 1 1 calc(50% - 10px); /* 手机端默认两列 */
-    margin: 0;
-    min-width: 120px;
-    text-align: center;
-    padding: 10px; /* 增加触摸面积 */
-}
-
-.zwb-panel-actions .menu_button.full-width {
-    flex: 1 1 100%;
-}
-
-.zwb-json-textarea {
-    width: 100%;
-    min-height: 120px;
-    font-family: Consolas, monospace;
-    font-size: 13px;
-    line-height: 1.5;
-    background: rgba(8, 10, 15, 0.78);
-    border: 1px solid var(--zwb-surface-border);
-    box-sizing: border-box;
-    color: var(--zwb-text-main);
-    resize: vertical;
-}
-
-@media (max-width: 768px) {
-    .zwb-modal-container {
-        padding: 0; /* 手机端去掉外边距 */
-    }
-
-    .zwb-modal-wrapper {
-        height: 100vh;
-        height: 100dvh; /* 适配iOS的底部安全区 */
-        border-radius: 0;
-        border: none;
-    }
-
-    .zwb-modal-header {
-        padding: 14px 16px 8px;
-    }
-    
-    .zwb-tab-content {
-        padding: 16px;
-    }
-
-    .zwb-json-textarea {
-        height: 25vh !important; 
-        min-height: 150px;
-    }
-}
+        <div class="zwb-tab-content" id="tab-backup">
+            <div class="zwb-card-grid">
+                <div class="zwb-card">
+                    <h3>已有备份列表</h3>
+                    <pre id="zwb_backup_list" style="font-size:12px; color:var(--zwb-text-main); white-space:pre-wrap; max-height:150px; overflow-y:auto;"></pre>
+                </div>
+            </div>
+            <div class="zwb-panel-actions">
+                <input id="zwb_backup_now_btn" class="menu_button" type="button" value="立即创建备份" />
+                <input id="zwb_refresh_backup_btn" class="menu_button" type="button" value="刷新备份列表" />
+            </div>
+            <div class="zwb-form-grid" style="margin-top: 15px;">
+                <div class="zwb-form-item zwb-form-item-full">
+                    <label for="zwb_backup_restore_select">选择要恢复的备份</label>
+                    <select id="zwb_backup_restore_select" class="text_pole" style="margin-bottom: 5px;"></select>
+                    <div class="zwb-panel-actions">
+                        <input id="zwb_restore_backup_btn" class="menu_button full-width" type="button" style="background:#8b0000; color:white;" value="⚠️ 执行危险覆盖恢复" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
