@@ -392,7 +392,6 @@ async function 刷新多个世界书条目显示(worldbookNames) {
     let allEntries = [];
     for (const name of worldbookNames) {
         const entries = await 读取世界书条目(name);
-        // 给每个条目打上来源书的标签
         entries.forEach(e => e._sourceWB = name); 
         allEntries = allEntries.concat(entries);
     }
@@ -626,18 +625,10 @@ function 解析友好Jsonl文本(text) {
 async function 检测连接状态() {
     const statusElement = $("#zwb_status_hint");
     statusElement.text("当前状态：正在检测...");
-
-    try {
-        const result = await 请求接口("/health");
-        const text = `当前状态：${result.message || "连接正常"}`;
-        statusElement.text(text);
-        $("#zwb_modal_runtime").text(text);
-    } catch (error) {
-        const text = `当前状态：检测失败 - ${error.message}`;
-        statusElement.text(text);
-        $("#zwb_modal_runtime").text(text);
-        throw error;
-    }
+    const result = await 请求接口("/health");
+    const text = `当前状态：${result.message || "连接正常"}`;
+    statusElement.text(text);
+    $("#zwb_modal_runtime").text(text);
 }
 
 async function 刷新总览信息() {
@@ -826,23 +817,36 @@ async function 刷新备份列表() {
     });
 }
 
+// 核心加载逻辑优化：高容错，单个接口死掉不会让整个 UI 卡住。
 async function 加载全部核心数据() {
-    await 检测连接状态();
-    await 刷新总览信息();
-    await 读取基础配置();
-    await 读取运行配置();
-    await 读取角色相关内容();
-    await 读取记忆列表();
-    await 刷新MEMORYMarkdown与世界书();
-    await 读取传感映射();
-    if (当前记忆列表?.full_logs?.length) {
-        await 打开记忆文件(当前记忆列表.full_logs[0].name);
-    }
-    if (当前记忆列表?.summary_logs?.length) {
-        await 打开Summary文件(当前记忆列表.summary_logs[0].name);
-    }
-    await 刷新备份列表();
-    刷新酒馆聊天显示();
+    const safeCall = async (fn) => {
+        try { await fn(); } catch (e) { console.warn("API调用忽略报错，继续执行UI:", e); }
+    };
+
+    // 同步并发执行，提升加载速度
+    await Promise.all([
+        safeCall(检测连接状态),
+        safeCall(刷新总览信息),
+        safeCall(读取基础配置),
+        safeCall(读取运行配置),
+        safeCall(读取角色相关内容),
+        safeCall(读取传感映射),
+        safeCall(刷新备份列表)
+    ]);
+
+    // 顺序执行
+    try {
+        await 读取记忆列表();
+        if (当前记忆列表?.full_logs?.length) {
+            await safeCall(() => 打开记忆文件(当前记忆列表.full_logs[0].name));
+        }
+        if (当前记忆列表?.summary_logs?.length) {
+            await safeCall(() => 打开Summary文件(当前记忆列表.summary_logs[0].name));
+        }
+    } catch (e) { console.warn(e); }
+
+    await safeCall(刷新MEMORYMarkdown与世界书);
+    try { 刷新酒馆聊天显示(); } catch (e) { console.warn(e); }
 }
 
 function 配置提示层() {
@@ -857,31 +861,30 @@ function 配置提示层() {
     };
 }
 
+// 弹窗显隐控制不再使用 jQuery 的 .css() 强行改 display，改用纯 CSS class 稳定过渡
 function 显示桥接中心模态框() {
     $("html, body").addClass("zwb-modal-open");
-    $("#zwb_modal_container").stop(true, true).css({
-        display: "flex",
-        opacity: "1",
-        visibility: "visible",
-    });
+    $("#zwb_modal_container").addClass("is-visible");
 }
 
 function 隐藏桥接中心模态框() {
-    $("#zwb_modal_container").stop(true, true).fadeOut("fast", () => {
-        $("html, body").removeClass("zwb-modal-open");
-    });
+    $("#zwb_modal_container").removeClass("is-visible");
+    $("html, body").removeClass("zwb-modal-open");
 }
 
 function 绑定模态框事件() {
     $("body").on("click", "#zwb_open_modal_btn", async (event) => {
         event.preventDefault();
         event.stopPropagation();
+        
+        // 瞬间无阻碍弹出 UI
         显示桥接中心模态框();
+        
         try {
             await 加载全部核心数据();
-            toastr.success("桥接中心已加载");
+            toastr.success("桥接中心加载完毕（即使部分失败界面也可使用）");
         } catch (error) {
-            toastr.error(`桥接中心加载失败：${error.message}`);
+            toastr.error(`加载异常：${error.message}`);
         }
     });
 
@@ -1108,7 +1111,6 @@ function 绑定按钮事件() {
         }
     });
 
-    // 监听世界书多选框
     $("body").on("change", ".zwb-wb-name-checkbox", async function () {
         const selectedNames = [];
         $(".zwb-wb-name-checkbox:checked").each(function() {
