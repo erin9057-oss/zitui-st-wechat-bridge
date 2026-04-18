@@ -1,10 +1,10 @@
 /* 微信 Bot 桥接中心基础样式 */
 
 :root {
-    --zwb-surface-solid: rgba(22, 24, 29, 0.96);
-    --zwb-surface-soft: rgba(31, 34, 41, 0.94);
+    --zwb-surface-solid: rgba(22, 24, 29, 0.98);
+    --zwb-surface-soft: rgba(31, 34, 41, 0.96);
     --zwb-surface-card: rgba(39, 43, 52, 0.96);
-    --zwb-surface-border: rgba(255, 255, 255, 0.14);
+    --zwb-surface-border: rgba(255, 255, 255, 0.15);
     --zwb-text-main: #f3f4f7;
     --zwb-text-subtle: rgba(243, 244, 247, 0.82);
     --zwb-accent: #7aa2ff;
@@ -28,146 +28,126 @@ html.zwb-modal-open {
 }
 
 .zwb-panel-desc {
-    margin: 8px 0 12px;
-    line-height: 1.7;
-    color: var(--zwb-text-main);
-    text-shadow: none;
+    font-size: 13px;
+    color: var(--zwb-text-subtle);
+    margin-bottom: 12px;
 }
 
-.zwb-panel-row {
-    margin-bottom: 10px;
-}
-
-.zwb-panel-row label {
-    display: block;
-    margin-bottom: 6px;
-    font-weight: 600;
-}
-
-.zwb-panel-actions {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin: 12px 0;
-}
-
-.zwb-status-hint {
-    padding: 10px 12px;
-    border-radius: 10px;
-    background: var(--zwb-surface-soft);
-    border: 1px solid var(--zwb-surface-border);
-    color: var(--zwb-text-main);
-    line-height: 1.6;
-    text-shadow: none;
-}
-
+/* 核心布局：全屏弹性容器，只允许内容区内部滚动 */
 .zwb-modal-container {
     position: fixed;
-    inset: 0;
     top: 0;
     left: 0;
-    width: 100vw;
-    width: 100dvw;
-    height: 100vh;
-    height: 100dvh;
-    z-index: 2147483000;
-    display: none;
+    right: 0;
+    bottom: 0;
+    z-index: 99999;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(3, 5, 10, 0.82);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    padding: 24px;
-    box-sizing: border-box;
-    overflow: auto;
-    overscroll-behavior: contain;
-    isolation: isolate;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
 .zwb-modal-wrapper {
-    position: relative;
-    width: min(1380px, 96vw);
-    max-width: 1380px;
-    height: min(900px, 94vh);
-    max-height: 94vh;
-    max-height: 94dvh;
-    overflow: auto;
-    overscroll-behavior: contain;
-    border-radius: 18px;
-    background: linear-gradient(180deg, rgba(23, 26, 33, 0.98) 0%, rgba(17, 19, 24, 0.98) 100%);
-    color: var(--zwb-text-main);
+    background: var(--zwb-surface-solid);
+    width: 100%;
+    max-width: 900px;
+    height: 90vh; /* 限制最高90%视窗高度 */
+    border-radius: 12px;
     border: 1px solid var(--zwb-surface-border);
-    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
-    padding: 24px;
-    box-sizing: border-box;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+    position: relative;
     display: flex;
-    flex-direction: column;
+    flex-direction: column; /* 纵向弹性排列 */
+    overflow: hidden; /* 防止溢出破坏圆角 */
 }
 
 .zwb-modal-close {
-    position: sticky;
-    top: 0;
-    margin-left: auto;
-    right: 0;
-    width: 40px;
-    height: 40px;
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    background: transparent;
     border: none;
-    border-radius: 999px;
+    color: var(--zwb-text-subtle);
+    font-size: 28px;
     cursor: pointer;
-    font-size: 24px;
-    background: rgba(255, 255, 255, 0.12);
+    line-height: 1;
+    z-index: 10;
+}
+
+.zwb-modal-close:hover {
     color: var(--zwb-text-main);
-    z-index: 3;
 }
 
 .zwb-modal-header {
-    margin-bottom: 16px;
-    padding-right: 0;
+    padding: 18px 24px 12px;
+    flex-shrink: 0; /* 保证头部不被挤压 */
 }
 
 .zwb-modal-header h2 {
-    margin: 0 0 8px;
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--zwb-text-main);
 }
 
 .zwb-modal-runtime {
-    padding: 10px 12px;
-    border-radius: 10px;
-    background: var(--zwb-surface-soft);
-    border: 1px solid var(--zwb-surface-border);
-    color: var(--zwb-text-main);
-    line-height: 1.6;
+    font-size: 12px;
+    color: var(--zwb-accent);
+    margin-top: 6px;
 }
 
+/* 选项卡导航，支持手机端横向滑动 */
 .zwb-tab-nav {
     display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 16px;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--zwb-surface-border);
+    background: var(--zwb-surface-soft);
+    flex-shrink: 0; /* 保证导航条不被挤压 */
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+}
+
+.zwb-tab-nav::-webkit-scrollbar {
+    height: 4px;
+}
+.zwb-tab-nav::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
 }
 
 .zwb-tab-btn {
-    border: 1px solid var(--zwb-surface-border);
-    background: rgba(255, 255, 255, 0.06);
-    color: var(--zwb-text-main);
-    border-radius: 999px;
-    padding: 9px 14px;
+    background: transparent;
+    border: none;
+    color: var(--zwb-text-subtle);
+    padding: 12px 16px;
+    font-size: 14px;
     cursor: pointer;
-    text-shadow: none;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    outline: none;
+}
+
+.zwb-tab-btn:hover {
+    color: var(--zwb-text-main);
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .zwb-tab-btn.active {
-    background: var(--zwb-accent-soft);
-    border-color: rgba(122, 162, 255, 0.65);
-    color: #ffffff;
+    color: var(--zwb-accent);
+    border-bottom-color: var(--zwb-accent);
 }
 
+/* 内容区：独立滚动，释放空间 */
 .zwb-tab-content {
     display: none;
-    min-height: 0;
-    overflow: visible;
-    padding-right: 4px;
-    padding-bottom: 24px;
-    flex: 1 1 auto;
+    flex-grow: 1; /* 撑满剩余高度 */
+    overflow-y: auto; /* 仅在此区域内滚动 */
+    padding: 20px 24px;
+    -webkit-overflow-scrolling: touch;
 }
 
 .zwb-tab-content.active {
@@ -176,54 +156,40 @@ html.zwb-modal-open {
 
 .zwb-card-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
-    margin-bottom: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
 }
 
-.zwb-card,
-.zwb-block {
-    border-radius: 14px;
-    padding: 14px 16px;
+.zwb-card {
     background: var(--zwb-surface-card);
     border: 1px solid var(--zwb-surface-border);
-    box-sizing: border-box;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.zwb-card h3 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: var(--zwb-text-subtle);
+}
+
+.zwb-card div {
+    font-size: 15px;
     color: var(--zwb-text-main);
-    text-shadow: none;
+    font-weight: 500;
 }
 
-.zwb-card h3,
-.zwb-block h3 {
-    margin-top: 0;
-    margin-bottom: 10px;
-}
-
-.zwb-card-warning {
-    border-color: rgba(255, 193, 7, 0.45);
-    background: linear-gradient(180deg, var(--zwb-surface-card) 0%, var(--zwb-warning-soft) 100%);
-}
-
-.zwb-card-danger {
-    border-color: rgba(255, 99, 132, 0.45);
-    background: linear-gradient(180deg, var(--zwb-surface-card) 0%, var(--zwb-danger-soft) 100%);
-}
-
-.zwb-two-col {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-}
-
+/* 并排输入框布局 */
 .zwb-form-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
 }
 
 .zwb-form-item {
     display: flex;
     flex-direction: column;
-    gap: 6px;
 }
 
 .zwb-form-item-full {
@@ -231,154 +197,73 @@ html.zwb-modal-open {
 }
 
 .zwb-form-item label {
-    font-weight: 600;
+    font-size: 13px;
+    color: var(--zwb-text-subtle);
+    margin-bottom: 6px;
 }
 
-.zwb-json-textarea {
-    min-height: 140px;
-    resize: vertical;
-}
-
-.zwb-large-textarea {
-    min-height: 240px;
-    max-height: min(56vh, 620px);
-    resize: vertical;
-}
-
-.zwb-tts-editor {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.zwb-tts-row {
-    display: grid;
-    grid-template-columns: 100px repeat(3, minmax(0, 1fr)) 88px;
-    gap: 10px;
-    align-items: center;
-    padding: 10px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+.zwb-form-item .text_pole {
+    width: 100%;
     box-sizing: border-box;
 }
 
-.zwb-tts-row-head {
-    font-weight: 700;
+/* 操作按钮组：弹性换行，节约手机纵向空间 */
+.zwb-panel-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
 }
 
-.zwb-worldbook-entry {
-    padding: 10px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    margin-bottom: 10px;
+.zwb-panel-actions .menu_button {
+    flex: 1 1 calc(50% - 10px); /* 手机端默认两列 */
+    margin: 0;
+    min-width: 120px;
+    text-align: center;
+    padding: 10px; /* 增加触摸面积 */
 }
 
-.zwb-worldbook-entry-title {
-    font-weight: 700;
-    margin-bottom: 8px;
+/* 单个按钮或者强调按钮可以霸占一整行 */
+.zwb-panel-actions .menu_button.full-width {
+    flex: 1 1 100%;
 }
 
-.zwb-worldbook-entry-preview {
-    white-space: pre-wrap;
-    line-height: 1.7;
-    margin-bottom: 8px;
-    opacity: 0.92;
-}
-
-.zwb-sensor-row {
-    display: grid;
-    grid-template-columns: 220px 1fr 88px;
-    gap: 10px;
-    align-items: start;
-    margin-bottom: 10px;
-}
-
-.zwb-sensor-desc {
-    min-height: 88px;
-    resize: vertical;
-}
-
-.zwb-output-box,
-.zwb-list-box {
-    min-height: 220px;
-    border-radius: 12px;
-    padding: 12px;
-    white-space: pre-wrap;
-    word-break: break-word;
-    line-height: 1.75;
+.zwb-json-textarea {
+    width: 100%;
+    min-height: 120px;
+    font-family: Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.5;
     background: rgba(8, 10, 15, 0.78);
     border: 1px solid var(--zwb-surface-border);
     box-sizing: border-box;
     color: var(--zwb-text-main);
-    overflow: auto;
-    overscroll-behavior: contain;
+    resize: vertical;
 }
 
-.zwb-note {
-    margin-top: 0;
-    margin-bottom: 12px;
-    opacity: 0.9;
-    line-height: 1.7;
-}
-
-@media (max-width: 980px) {
+@media (max-width: 768px) {
     .zwb-modal-container {
-        padding: 0;
-        align-items: stretch;
+        padding: 0; /* 手机端去掉外边距 */
     }
 
     .zwb-modal-wrapper {
-        width: 100vw;
-        width: 100dvw;
         height: 100vh;
-        height: 100dvh;
-        max-height: 100vh;
-        max-height: 100dvh;
+        height: 100dvh; /* 适配iOS的底部安全区 */
         border-radius: 0;
-        padding: 14px;
-        -webkit-overflow-scrolling: touch;
-        overflow-y: auto;
-        overflow-x: hidden;
+        border: none;
     }
 
-    .zwb-modal-header,
-    .zwb-tab-nav,
+    .zwb-modal-header {
+        padding: 14px 16px 8px;
+    }
+    
     .zwb-tab-content {
-        position: relative;
-        z-index: 1;
+        padding: 16px;
     }
 
-    .zwb-tab-nav {
-        position: sticky;
-        top: 0;
-        background: rgba(17, 19, 24, 0.96);
-        padding: 8px 0 10px;
-        z-index: 2;
-    }
-
-    .zwb-card-grid,
-    .zwb-two-col,
-    .zwb-form-grid,
-    .zwb-tts-row,
-    .zwb-sensor-row {
-        grid-template-columns: 1fr;
-    }
-
-    .zwb-large-textarea,
-    .zwb-output-box,
-    .zwb-list-box {
-        min-height: 180px;
-        max-height: 42dvh;
-    }
-
-    .zwb-panel-actions {
-        position: sticky;
-        bottom: 0;
-        z-index: 2;
-        background: rgba(17, 19, 24, 0.96);
-        padding-top: 8px;
-        padding-bottom: 4px;
+    /* 手机端编辑器默认高度降低，防止占满一屏 */
+    .zwb-json-textarea {
+        height: 25vh !important; 
+        min-height: 150px;
     }
 }
