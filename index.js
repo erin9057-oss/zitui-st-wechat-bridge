@@ -1,5 +1,5 @@
 import { extension_settings } from "../../../extensions.js";
-import { saveSettingsDebounced } from "../../../../script.js";
+import { saveSettingsDebounced, getRequestHeaders } from "../../../../script.js";
 
 const extensionName = "zitui-st-wechat-bridge";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
@@ -47,6 +47,7 @@ async function 请求接口(pathname, options = {}) {
         method: options.method || "POST",
         headers: {
             "Content-Type": "application/json",
+            ...getRequestHeaders(),
             ...(options.headers || {}),
         },
         body: JSON.stringify({
