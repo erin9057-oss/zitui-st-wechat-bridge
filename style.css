@@ -1,5 +1,28 @@
 /* 微信 Bot 桥接中心基础样式 */
 
+:root {
+    --zwb-surface-solid: rgba(22, 24, 29, 0.96);
+    --zwb-surface-soft: rgba(31, 34, 41, 0.94);
+    --zwb-surface-card: rgba(39, 43, 52, 0.96);
+    --zwb-surface-border: rgba(255, 255, 255, 0.14);
+    --zwb-text-main: #f3f4f7;
+    --zwb-text-subtle: rgba(243, 244, 247, 0.82);
+    --zwb-accent: #7aa2ff;
+    --zwb-accent-soft: rgba(122, 162, 255, 0.22);
+    --zwb-danger-soft: rgba(255, 99, 132, 0.18);
+    --zwb-warning-soft: rgba(255, 193, 7, 0.18);
+}
+
+body.zwb-modal-open,
+html.zwb-modal-open {
+    overflow: hidden !important;
+    overscroll-behavior: none;
+}
+
+#toast-container {
+    z-index: 2147483600 !important;
+}
+
 .zwb-extension-settings {
     margin-top: 8px;
 }
@@ -7,7 +30,8 @@
 .zwb-panel-desc {
     margin: 8px 0 12px;
     line-height: 1.7;
-    color: var(--SmartThemeBodyColor);
+    color: var(--zwb-text-main);
+    text-shadow: none;
 }
 
 .zwb-panel-row {
@@ -30,8 +54,11 @@
 .zwb-status-hint {
     padding: 10px 12px;
     border-radius: 10px;
-    background: rgba(127, 127, 127, 0.12);
+    background: var(--zwb-surface-soft);
+    border: 1px solid var(--zwb-surface-border);
+    color: var(--zwb-text-main);
     line-height: 1.6;
+    text-shadow: none;
 }
 
 .zwb-modal-container {
@@ -47,10 +74,13 @@
     display: none;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.84);
+    background: rgba(3, 5, 10, 0.82);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     padding: 24px;
     box-sizing: border-box;
-    overflow: hidden;
+    overflow: auto;
+    overscroll-behavior: contain;
     isolation: isolate;
 }
 
@@ -61,33 +91,38 @@
     height: min(900px, 94vh);
     max-height: 94vh;
     max-height: 94dvh;
-    overflow: hidden;
+    overflow: auto;
+    overscroll-behavior: contain;
     border-radius: 18px;
-    background: var(--SmartThemeBlurTintColor, #1d1d1f);
-    color: var(--SmartThemeBodyColor);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, rgba(23, 26, 33, 0.98) 0%, rgba(17, 19, 24, 0.98) 100%);
+    color: var(--zwb-text-main);
+    border: 1px solid var(--zwb-surface-border);
     box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
     padding: 24px;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
 }
 
 .zwb-modal-close {
-    position: absolute;
-    top: 12px;
-    right: 16px;
-    width: 38px;
-    height: 38px;
+    position: sticky;
+    top: 0;
+    margin-left: auto;
+    right: 0;
+    width: 40px;
+    height: 40px;
     border: none;
     border-radius: 999px;
     cursor: pointer;
     font-size: 24px;
-    background: rgba(255, 255, 255, 0.1);
-    color: inherit;
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--zwb-text-main);
+    z-index: 3;
 }
 
 .zwb-modal-header {
     margin-bottom: 16px;
-    padding-right: 48px;
+    padding-right: 0;
 }
 
 .zwb-modal-header h2 {
@@ -97,7 +132,9 @@
 .zwb-modal-runtime {
     padding: 10px 12px;
     border-radius: 10px;
-    background: rgba(127, 127, 127, 0.12);
+    background: var(--zwb-surface-soft);
+    border: 1px solid var(--zwb-surface-border);
+    color: var(--zwb-text-main);
     line-height: 1.6;
 }
 
@@ -109,24 +146,28 @@
 }
 
 .zwb-tab-btn {
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.04);
-    color: inherit;
+    border: 1px solid var(--zwb-surface-border);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--zwb-text-main);
     border-radius: 999px;
     padding: 9px 14px;
     cursor: pointer;
+    text-shadow: none;
 }
 
 .zwb-tab-btn.active {
-    background: rgba(88, 144, 255, 0.25);
-    border-color: rgba(88, 144, 255, 0.55);
+    background: var(--zwb-accent-soft);
+    border-color: rgba(122, 162, 255, 0.65);
+    color: #ffffff;
 }
 
 .zwb-tab-content {
     display: none;
-    height: calc(100% - 138px);
-    overflow: auto;
+    min-height: 0;
+    overflow: visible;
     padding-right: 4px;
+    padding-bottom: 24px;
+    flex: 1 1 auto;
 }
 
 .zwb-tab-content.active {
@@ -144,9 +185,11 @@
 .zwb-block {
     border-radius: 14px;
     padding: 14px 16px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--zwb-surface-card);
+    border: 1px solid var(--zwb-surface-border);
     box-sizing: border-box;
+    color: var(--zwb-text-main);
+    text-shadow: none;
 }
 
 .zwb-card h3,
@@ -156,11 +199,13 @@
 }
 
 .zwb-card-warning {
-    border-color: rgba(255, 193, 7, 0.4);
+    border-color: rgba(255, 193, 7, 0.45);
+    background: linear-gradient(180deg, var(--zwb-surface-card) 0%, var(--zwb-warning-soft) 100%);
 }
 
 .zwb-card-danger {
-    border-color: rgba(255, 99, 132, 0.4);
+    border-color: rgba(255, 99, 132, 0.45);
+    background: linear-gradient(180deg, var(--zwb-surface-card) 0%, var(--zwb-danger-soft) 100%);
 }
 
 .zwb-two-col {
@@ -196,6 +241,7 @@
 
 .zwb-large-textarea {
     min-height: 240px;
+    max-height: min(56vh, 620px);
     resize: vertical;
 }
 
@@ -262,9 +308,12 @@
     white-space: pre-wrap;
     word-break: break-word;
     line-height: 1.75;
-    background: rgba(0, 0, 0, 0.18);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(8, 10, 15, 0.78);
+    border: 1px solid var(--zwb-surface-border);
     box-sizing: border-box;
+    color: var(--zwb-text-main);
+    overflow: auto;
+    overscroll-behavior: contain;
 }
 
 .zwb-note {
@@ -277,6 +326,7 @@
 @media (max-width: 980px) {
     .zwb-modal-container {
         padding: 0;
+        align-items: stretch;
     }
 
     .zwb-modal-wrapper {
@@ -287,11 +337,25 @@
         max-height: 100vh;
         max-height: 100dvh;
         border-radius: 0;
-        padding: 16px;
+        padding: 14px;
+        -webkit-overflow-scrolling: touch;
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 
+    .zwb-modal-header,
+    .zwb-tab-nav,
     .zwb-tab-content {
-        height: calc(100% - 150px);
+        position: relative;
+        z-index: 1;
+    }
+
+    .zwb-tab-nav {
+        position: sticky;
+        top: 0;
+        background: rgba(17, 19, 24, 0.96);
+        padding: 8px 0 10px;
+        z-index: 2;
     }
 
     .zwb-card-grid,
@@ -300,5 +364,21 @@
     .zwb-tts-row,
     .zwb-sensor-row {
         grid-template-columns: 1fr;
+    }
+
+    .zwb-large-textarea,
+    .zwb-output-box,
+    .zwb-list-box {
+        min-height: 180px;
+        max-height: 42dvh;
+    }
+
+    .zwb-panel-actions {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+        background: rgba(17, 19, 24, 0.96);
+        padding-top: 8px;
+        padding-bottom: 4px;
     }
 }

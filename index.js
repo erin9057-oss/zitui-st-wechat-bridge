@@ -139,6 +139,26 @@ function 创建文本域块(labelText, keyPath, value, placeholder = "") {
     return wrapper;
 }
 
+function 创建小时选择块(labelText, keyPath, value) {
+    const wrapper = $('<div class="zwb-form-item"></div>');
+    wrapper.append(`<label>${labelText}</label>`);
+    const select = $(`<select class="text_pole" data-key="${keyPath}"></select>`);
+    for (let hour = 0; hour <= 24; hour += 1) {
+        select.append(`<option value="${hour}">${hour}</option>`);
+    }
+    select.val(String(value ?? 0));
+    wrapper.append(select);
+    return wrapper;
+}
+
+function 毫秒转秒输入值(value, fallbackSeconds) {
+    const ms = Number(value);
+    if (Number.isFinite(ms) && ms >= 0) {
+        return Math.round(ms / 1000);
+    }
+    return fallbackSeconds;
+}
+
 function 渲染主配置表单() {
     if (!当前主配置) return;
     const container = $("#zwb_config_form");
@@ -231,15 +251,15 @@ function 渲染运行配置表单() {
     const container = $("#zwb_runtime_form");
     container.empty();
 
-    container.append(创建基础输入块("等待用户打字时间（毫秒）", "wait_time_ms", 当前运行配置.wait_time_ms || 7000, "number"));
-    container.append(创建基础输入块("主动联系阈值（毫秒）", "idle_limit_ms", 当前运行配置.idle_limit_ms || 1800000, "number"));
-    container.append(创建基础输入块("唤醒开始小时", "wake_window.start_hour", 解析键路径(当前运行配置, ["wake_window", "start_hour"], 9), "number"));
-    container.append(创建基础输入块("唤醒结束小时", "wake_window.end_hour", 解析键路径(当前运行配置, ["wake_window", "end_hour"], 3), "number"));
-    container.append(创建基础输入块("Sensor 密钥", "sensor.secret_token", 解析键路径(当前运行配置, ["sensor", "secret_token"], "")));
-    container.append(创建基础输入块("Sensor 端口", "sensor.port", 解析键路径(当前运行配置, ["sensor", "port"], 7860), "number"));
-    container.append(创建基础输入块("事件防抖窗口（毫秒）", "sensor.duplicate_window_ms", 解析键路径(当前运行配置, ["sensor", "duplicate_window_ms"], 300000), "number"));
-    container.append(创建基础输入块("事件保留时长（小时）", "sensor.retention_hours", 解析键路径(当前运行配置, ["sensor", "retention_hours"], 24), "number"));
-    container.append(创建文本域块("高危应用名单（每行一个）", "sensor.urgent_apps", (解析键路径(当前运行配置, ["sensor", "urgent_apps"], []) || []).join("\n")));
+    container.append(创建基础输入块("等你输入时，最多等几秒再发出去", "wait_time_seconds", 毫秒转秒输入值(当前运行配置.wait_time_ms, 7), "number"));
+    container.append(创建基础输入块("多久没收到你的消息后，才允许他主动联系你（秒）", "idle_limit_seconds", 毫秒转秒输入值(当前运行配置.idle_limit_ms, 1800), "number"));
+    container.append(创建小时选择块("你的他几点开始可以主动发消息（24 时制）", "wake_window.start_hour", 解析键路径(当前运行配置, ["wake_window", "start_hour"], 9)));
+    container.append(创建小时选择块("你的他几点之后不再主动发消息（24 时制）", "wake_window.end_hour", 解析键路径(当前运行配置, ["wake_window", "end_hour"], 3)));
+    container.append(创建文本域块("那些你一用他就响起警报的应用（每行一个）", "sensor.urgent_apps", (解析键路径(当前运行配置, ["sensor", "urgent_apps"], []) || []).join("\n"), "例如：爱发电"));
+
+    const tip = $('<div class="zwb-form-item-full zwb-output-box"></div>');
+    tip.text("跨夜时间段也支持，例如开始填 23、结束填 9，表示晚上 11 点到第二天早上 9 点都允许主动联系。开始和结束填成同一个数字时，表示全天都允许。");
+    container.append(tip);
 
     const buttons = $('<div class="zwb-form-item-full zwb-panel-actions"><button id="zwb_save_runtime_config_btn" class="menu_button" type="button">保存运行策略</button><button id="zwb_reload_runtime_config_btn" class="menu_button" type="button">重新读取</button></div>');
     container.append(buttons);
@@ -247,17 +267,22 @@ function 渲染运行配置表单() {
 
 function 读取运行配置表单() {
     const result = structuredClone(当前运行配置 || {});
-    $("#zwb_runtime_form [data-key]").each(function () {
-        const keyPath = $(this).data("key");
-        if (!keyPath) return;
-        let value = $(this).val();
-        if (keyPath === "sensor.urgent_apps") {
-            value = String(value || "").split("\n").map(v => v.trim()).filter(Boolean);
-        } else if ($(this).attr("type") === "number") {
-            value = Number(value || 0);
-        }
-        设置键路径(result, keyPath, value);
-    });
+    const waitSeconds = Number($("#zwb_runtime_form [data-key='wait_time_seconds']").val() || 0);
+    const idleSeconds = Number($("#zwb_runtime_form [data-key='idle_limit_seconds']").val() || 0);
+    const startHour = Number($("#zwb_runtime_form [data-key='wake_window.start_hour']").val() || 0);
+    const endHour = Number($("#zwb_runtime_form [data-key='wake_window.end_hour']").val() || 0);
+    const urgentApps = String($("#zwb_runtime_form [data-key='sensor.urgent_apps']").val() || "")
+        .split("\n")
+        .map(v => v.trim())
+        .filter(Boolean);
+
+    result.wait_time_ms = Math.max(0, waitSeconds) * 1000;
+    result.idle_limit_ms = Math.max(0, idleSeconds) * 1000;
+    result.wake_window = result.wake_window || {};
+    result.wake_window.start_hour = Math.min(24, Math.max(0, startHour));
+    result.wake_window.end_hour = Math.min(24, Math.max(0, endHour));
+    result.sensor = result.sensor || {};
+    result.sensor.urgent_apps = urgentApps;
     return result;
 }
 
@@ -278,10 +303,47 @@ function 获取稳定接口(fnName) {
 }
 
 async function 读取世界书名称列表() {
-    const getter = 获取稳定接口("getWorldbookNames");
-    if (!getter) return [];
-    const result = await getter();
-    return Array.isArray(result) ? result : [];
+    const names = new Set();
+    const getAll = 获取稳定接口("getWorldbookNames");
+    const getGlobal = 获取稳定接口("getGlobalWorldbookNames");
+    const getChar = 获取稳定接口("getCharWorldbookNames");
+    const getChat = 获取稳定接口("getChatWorldbookName");
+
+    const pushNames = (value) => {
+        if (Array.isArray(value)) {
+            value.filter(Boolean).forEach(name => names.add(String(name)));
+            return;
+        }
+        if (value && typeof value === "object") {
+            if (value.primary) names.add(String(value.primary));
+            if (Array.isArray(value.additional)) {
+                value.additional.filter(Boolean).forEach(name => names.add(String(name)));
+            }
+            return;
+        }
+        if (value) {
+            names.add(String(value));
+        }
+    };
+
+    if (getAll) pushNames(await getAll());
+    if (getGlobal) pushNames(await getGlobal());
+    if (getChar) {
+        try {
+            pushNames(await getChar("current"));
+        } catch (_error) {
+            pushNames(await getChar());
+        }
+    }
+    if (getChat) {
+        try {
+            pushNames(await getChat("current"));
+        } catch (_error) {
+            pushNames(await getChat());
+        }
+    }
+
+    return Array.from(names);
 }
 
 async function 读取世界书条目(worldbookName) {
@@ -367,9 +429,24 @@ function 提取当前角色信息() {
 function 提取当前User信息() {
     const context = 获取酒馆上下文();
     if (!context) return null;
+
+    const persona = context.persona || context.user || context.userPersona || {};
+    const candidateParts = [
+        context.persona_description,
+        context.user_description,
+        context.description,
+        context.chatMetadata?.persona,
+        context.chatMetadata?.persona_description,
+        persona.description,
+        persona.persona_description,
+        persona.note,
+        persona.content,
+        persona.text,
+    ].filter(Boolean);
+
     return {
-        name: context.name1 || context.user_name || "User",
-        description: context.persona_description || context.user_description || context.persona?.description || "",
+        name: context.name1 || context.user_name || persona.name || persona.persona_name || "User",
+        description: candidateParts.join("\n\n").trim(),
     };
 }
 
@@ -379,6 +456,19 @@ function 注入Name行(text, name) {
         return String(text).replace(/-\s*\*\*Name:\*\*\s*.*/i, `- **Name:** ${safeName}`);
     }
     return `- **Name:** ${safeName}\n\n${String(text || "").trim()}`.trim();
+}
+
+function 合并Soul草稿与现有尾段(newText, currentSoulText, name) {
+    const withName = 注入Name行(newText, name);
+    const marker = "# 动态视觉反馈系统";
+    const normalizedCurrent = String(currentSoulText || "");
+    const markerIndex = normalizedCurrent.indexOf(marker);
+    if (markerIndex === -1) {
+        return withName;
+    }
+    const tail = normalizedCurrent.slice(markerIndex).trim();
+    const head = withName.split(marker)[0].trim();
+    return [head, tail].filter(Boolean).join("\n\n");
 }
 
 function 生成Identity候选文本(role) {
@@ -393,7 +483,7 @@ function 生成Soul候选文本(role) {
 
 function 生成User候选文本(userInfo) {
     if (!userInfo) return "未能从当前酒馆上下文读取 User 描述。";
-    return `# USER.md - 自动生成候选\n\n- **Name:** ${userInfo.name || "User"}\n\n---\n\n## User Profile\n${userInfo.description || ""}`.trim();
+    return `# USER.md - 自动生成候选\n\n- **Name:** ${userInfo.name || "User"}\n\n---\n\n## 你的基础设定\n${userInfo.description || ""}\n\n## 他的参考备注\n这里可以补充你的习惯、边界、称呼偏好、作息、雷点等。`.trim();
 }
 
 function 友好化Jsonl内容(payload) {
@@ -489,7 +579,7 @@ async function 读取角色相关内容() {
         请求接口("/workspace/read", { body: { file_key: "user" } }),
     ]);
 
-    $("#zwb_character_current").text(`【当前 IDENTITY.md】\n${identityResult.data || ""}\n\n【当前 SOUL.md】\n${soulResult.data || ""}`);
+    $("#zwb_character_current").text(`【当前 IDENTITY.md（稳定角色身份设定）】\n${identityResult.data || ""}\n\n【当前 SOUL.md（灵魂补充设定，动态视觉反馈段会保留）】\n${soulResult.data || ""}`);
     $("#zwb_user_current").text(userResult.data || "");
 
     const role = 提取当前角色信息();
@@ -543,8 +633,40 @@ async function 打开记忆文件(fileName) {
 async function 打开Summary文件(fileName) {
     const result = await 请求接口("/memory/read", { body: { file_name: fileName } });
     const payload = result.data?.content || { metadata: {}, items: [] };
-    const previewLines = (payload.items || []).map(item => `【${item.send_date || '无时间'}】\n${item.mes || item.raw || ''}`);
+    const previewLines = (payload.items || []).map(item => `【${item.send_date || '无时间'}】\n${item.name || (item.is_user ? '你' : '他')}：${item.mes || item.raw || ''}`);
     $("#zwb_summary_preview_editor").val(previewLines.join("\n\n"));
+}
+
+function 获取当前聊天消息列表() {
+    const getter = 获取稳定接口("getChatMessages");
+    if (!getter) return [];
+    try {
+        const result = getter("0-{{lastMessageId}}", { include_swipes: false });
+        return Array.isArray(result) ? result : [];
+    } catch (_error) {
+        const context = 获取酒馆上下文();
+        return Array.isArray(context?.chat) ? context.chat : (Array.isArray(window.SillyTavern?.chat) ? window.SillyTavern.chat : []);
+    }
+}
+
+function 酒馆消息转微信记忆项(messages) {
+    return (messages || []).map(message => ({
+        name: message.name || (message.is_user ? "用户" : "角色"),
+        is_user: Boolean(message.is_user || message.role === "user"),
+        is_system: Boolean(message.is_system || message.role === "system"),
+        send_date: message.send_date || new Date().toISOString(),
+        mes: message.message || message.mes || message.raw || "",
+    })).filter(item => item.mes);
+}
+
+function 微信记忆转酒馆消息(items) {
+    return (items || []).map(item => ({
+        name: item.name || (item.is_user ? "用户" : "角色"),
+        is_user: Boolean(item.is_user),
+        is_system: Boolean(item.is_system),
+        role: item.is_system ? "system" : (item.is_user ? "user" : "assistant"),
+        message: item.mes || item.raw || "",
+    })).filter(item => item.message);
 }
 
 function 渲染传感映射编辑器() {
@@ -623,7 +745,20 @@ async function 加载全部核心数据() {
     await 刷新备份列表();
 }
 
+function 配置提示层() {
+    if (!window.toastr) return;
+    toastr.options = {
+        ...(toastr.options || {}),
+        newestOnTop: true,
+        preventDuplicates: true,
+        timeOut: 2600,
+        extendedTimeOut: 900,
+        positionClass: "toast-top-center",
+    };
+}
+
 function 显示桥接中心模态框() {
+    $("html, body").addClass("zwb-modal-open");
     $("#zwb_modal_container").stop(true, true).css({
         display: "flex",
         opacity: "1",
@@ -632,7 +767,9 @@ function 显示桥接中心模态框() {
 }
 
 function 隐藏桥接中心模态框() {
-    $("#zwb_modal_container").stop(true, true).fadeOut("fast");
+    $("#zwb_modal_container").stop(true, true).fadeOut("fast", () => {
+        $("html, body").removeClass("zwb-modal-open");
+    });
 }
 
 function 绑定模态框事件() {
@@ -751,10 +888,15 @@ function 绑定按钮事件() {
         try {
             const fileKey = $("#zwb_character_target_select").val();
             const name = $("#zwb_character_name_input").val();
-            const content = 注入Name行($("#zwb_character_preview_editor").val(), name);
+            const draftText = $("#zwb_character_preview_editor").val();
+            let content = 注入Name行(draftText, name);
+            if (fileKey === "soul") {
+                const currentSoul = String($("#zwb_character_current").text().split("【当前 SOUL.md（灵魂补充设定，动态视觉反馈段会保留）】\n")[1] || "");
+                content = 合并Soul草稿与现有尾段(draftText, currentSoul, name);
+            }
             await 请求接口("/workspace/save", { body: { file_key: fileKey, data: content } });
             await 读取角色相关内容();
-            toastr.success(`已写入 ${fileKey === 'identity' ? 'IDENTITY.md' : 'SOUL.md'}`);
+            toastr.success(`已写入 ${fileKey === 'identity' ? 'IDENTITY.md（稳定角色身份设定）' : 'SOUL.md（已保留动态视觉反馈段）'}`);
         } catch (error) {
             toastr.error(`写入角色文件失败：${error.message}`);
         }
@@ -776,6 +918,53 @@ function 绑定按钮事件() {
             toastr.success("已写入 USER.md");
         } catch (error) {
             toastr.error(`写入 USER.md 失败：${error.message}`);
+        }
+    });
+
+    $("body").on("click", "#zwb_import_st_chat_to_wechat_btn", async () => {
+        try {
+            const fileName = String($("#zwb_memory_file_input").val() || "").trim();
+            if (!fileName) {
+                return toastr.warning("请先在左侧选择一个微信 Memory 文件，再执行导入");
+            }
+            const messages = 获取当前聊天消息列表();
+            const converted = 酒馆消息转微信记忆项(messages);
+            if (!converted.length) {
+                return toastr.warning("当前酒馆聊天没有可导入内容");
+            }
+            const metadata = {
+                imported_from: "sillytavern_current_chat",
+                imported_at: new Date().toISOString(),
+                source_chat_id: 获取酒馆上下文()?.chatId || window.SillyTavern?.chatId || "unknown",
+            };
+            await 请求接口("/memory/save", { body: { file_name: fileName, metadata, items: converted } });
+            $("#zwb_chat_exchange_log").val(`已把当前酒馆聊天导入到微信 Memory：${fileName}\n共写入 ${converted.length} 条消息。`);
+            await 打开记忆文件(fileName);
+            await 读取记忆列表();
+            toastr.success("当前酒馆聊天已导入微信插件");
+        } catch (error) {
+            toastr.error(`导入到微信 Memory 失败：${error.message}`);
+        }
+    });
+
+    $("body").on("click", "#zwb_import_wechat_memory_to_st_btn", async () => {
+        try {
+            const creator = 获取稳定接口("createChatMessages");
+            if (!creator) {
+                return toastr.error("当前酒馆环境没有可用的聊天写入接口");
+            }
+            if (!当前记忆文件数据 || !(当前记忆文件数据.items || []).length) {
+                return toastr.warning("请先打开一个微信 Memory 文件，再导入到酒馆");
+            }
+            const converted = 微信记忆转酒馆消息(当前记忆文件数据.items || []);
+            if (!converted.length) {
+                return toastr.warning("当前微信 Memory 没有可导入到酒馆的消息");
+            }
+            await creator(converted, { insert_before: "end", refresh: "all" });
+            $("#zwb_chat_exchange_log").val(`已把当前微信 Memory 追加导入到酒馆聊天。\n来源文件：${$("#zwb_memory_file_input").val() || "未命名"}\n共追加 ${converted.length} 条消息。`);
+            toastr.success("当前微信 Memory 已追加导入酒馆");
+        } catch (error) {
+            toastr.error(`导入到酒馆聊天失败：${error.message}`);
         }
     });
 
@@ -939,9 +1128,9 @@ async function 初始化界面() {
 
 jQuery(async () => {
     try {
+        配置提示层();
         获取设置();
         await 初始化界面();
-        await 检测连接状态();
     } catch (error) {
         console.error("微信 Bot 桥接中心初始化失败:", error);
         toastr.error(`微信 Bot 桥接中心初始化失败：${error.message}`);
