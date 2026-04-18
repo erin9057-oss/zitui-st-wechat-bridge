@@ -1,0 +1,33 @@
+<div class="zwb-extension-settings">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>微信 Bot 桥接中心</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <p class="zwb-panel-desc">
+                在这里管理酒馆与微信 Bot 的桥接配置、角色导入、记忆文件、Summary 日记与备份恢复。
+            </p>
+            <div class="zwb-panel-row">
+                <label for="zwb_local_base_dir">本地基础目录</label>
+                <input id="zwb_local_base_dir" class="text_pole" type="text" placeholder="例如：~/WechatAI/openclaw-weixin" />
+            </div>
+            <div class="zwb-panel-row">
+                <label class="checkbox_label">
+                    <input id="zwb_enable_http_mode" type="checkbox" />
+                    <span>启用远端 HTTP 模式</span>
+                </label>
+            </div>
+            <div class="zwb-panel-row">
+                <label for="zwb_remote_base_url">远端地址</label>
+                <input id="zwb_remote_base_url" class="text_pole" type="text" placeholder="例如：http://127.0.0.1:7860" />
+            </div>
+            <div class="zwb-panel-actions">
+                <input id="zwb_open_modal_btn" class="menu_button" type="submit" value="打开桥接中心" />
+                <input id="zwb_ping_btn" class="menu_button" type="submit" value="检测连接状态" />
+            </div>
+            <div id="zwb_status_hint" class="zwb-status-hint">当前状态：尚未检测</div>
+            <hr class="sysHR" />
+        </div>
+    </div>
+</div>

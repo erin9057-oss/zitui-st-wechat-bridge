@@ -1,0 +1,218 @@
+<div id="zwb_modal_container" class="zwb-modal-container" style="display:none;">
+    <div class="zwb-modal-wrapper">
+        <button id="zwb_modal_close" class="zwb-modal-close" type="button">×</button>
+        <div class="zwb-modal-header">
+            <h2>微信 Bot 桥接中心</h2>
+            <div id="zwb_modal_runtime" class="zwb-modal-runtime">正在初始化状态...</div>
+        </div>
+
+        <div class="zwb-tab-nav">
+            <button class="zwb-tab-btn active" data-tab="tab-overview">总览</button>
+            <button class="zwb-tab-btn" data-tab="tab-config">基础配置</button>
+            <button class="zwb-tab-btn" data-tab="tab-runtime">运行策略</button>
+            <button class="zwb-tab-btn" data-tab="tab-character">角色导入</button>
+            <button class="zwb-tab-btn" data-tab="tab-user">User 导入</button>
+            <button class="zwb-tab-btn" data-tab="tab-memory">记忆管理</button>
+            <button class="zwb-tab-btn" data-tab="tab-summary">Summary 日记</button>
+            <button class="zwb-tab-btn" data-tab="tab-sensor">Sensor 管理</button>
+            <button class="zwb-tab-btn" data-tab="tab-backup">备份恢复</button>
+        </div>
+
+        <div class="zwb-tab-content active" id="tab-overview">
+            <div class="zwb-card-grid">
+                <div class="zwb-card">
+                    <h3>连接模式</h3>
+                    <div id="zwb_mode_badge">未读取</div>
+                </div>
+                <div class="zwb-card">
+                    <h3>当前活跃记忆</h3>
+                    <div id="zwb_active_memory">未读取</div>
+                </div>
+                <div class="zwb-card zwb-card-warning">
+                    <h3>鉴权备份提醒</h3>
+                    <div id="zwb_accounts_notice">`accounts/` 将被视为最高优先级备份对象。</div>
+                </div>
+            </div>
+            <div class="zwb-block">
+                <h3>最近状态</h3>
+                <div id="zwb_overview_status" class="zwb-output-box">尚未加载状态信息。</div>
+            </div>
+        </div>
+
+        <div class="zwb-tab-content" id="tab-config">
+            <div class="zwb-block">
+                <h3>基础配置</h3>
+                <p class="zwb-note">这里用于编辑主配置文件中的聊天、语音、图像、Miio 与服务地址配置。</p>
+                <div id="zwb_config_form" class="zwb-form-grid"></div>
+            </div>
+        </div>
+
+        <div class="zwb-tab-content" id="tab-runtime">
+            <div class="zwb-block">
+                <h3>运行策略</h3>
+                <p class="zwb-note">这里用于编辑等待输入秒数、主动联系阈值、唤醒时间段、远端模式与安全密钥等设置。</p>
+                <div id="zwb_runtime_form" class="zwb-form-grid"></div>
+            </div>
+        </div>
+
+        <div class="zwb-tab-content" id="tab-character">
+            <div class="zwb-two-col">
+                <div class="zwb-block">
+                    <h3>当前 bot 文件</h3>
+                    <div id="zwb_character_current" class="zwb-output-box">尚未加载。</div>
+                </div>
+                <div class="zwb-block">
+                    <h3>角色导入编辑区</h3>
+                    <div class="zwb-form-grid">
+                        <div class="zwb-form-item">
+                            <label for="zwb_character_target_select">导入目标</label>
+                            <select id="zwb_character_target_select" class="text_pole">
+                                <option value="identity">写入 IDENTITY.md</option>
+                                <option value="soul">写入 SOUL.md</option>
+                            </select>
+                        </div>
+                        <div class="zwb-form-item">
+                            <label for="zwb_character_name_input">Name 行</label>
+                            <input id="zwb_character_name_input" class="text_pole" type="text" placeholder="会写入 - **Name:** 同一行" />
+                        </div>
+                        <div class="zwb-form-item-full">
+                            <label for="zwb_character_preview_editor">候选文本（可二次编辑）</label>
+                            <textarea id="zwb_character_preview_editor" class="text_pole zwb-large-textarea" placeholder="请先从当前角色卡生成候选文本"></textarea>
+                        </div>
+                    </div>
+                    <div class="zwb-panel-actions">
+                        <button id="zwb_generate_identity_btn" class="menu_button" type="button">生成 IDENTITY 候选</button>
+                        <button id="zwb_generate_soul_btn" class="menu_button" type="button">生成 SOUL 候选</button>
+                        <button id="zwb_save_character_btn" class="menu_button" type="button">确认写入目标文件</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="zwb-tab-content" id="tab-user">
+            <div class="zwb-two-col">
+                <div class="zwb-block">
+                    <h3>当前 USER.md</h3>
+                    <div id="zwb_user_current" class="zwb-output-box">尚未加载。</div>
+                </div>
+                <div class="zwb-block">
+                    <h3>User 导入编辑区</h3>
+                    <div class="zwb-form-grid">
+                        <div class="zwb-form-item">
+                            <label for="zwb_user_name_input">Name 行</label>
+                            <input id="zwb_user_name_input" class="text_pole" type="text" placeholder="会写入 - **Name:** 同一行" />
+                        </div>
+                        <div class="zwb-form-item-full">
+                            <label for="zwb_user_preview_editor">候选文本（可二次编辑）</label>
+                            <textarea id="zwb_user_preview_editor" class="text_pole zwb-large-textarea" placeholder="请先从当前 Persona / User 描述生成候选文本"></textarea>
+                        </div>
+                    </div>
+                    <div class="zwb-panel-actions">
+                        <button id="zwb_generate_user_btn" class="menu_button" type="button">生成 USER 候选</button>
+                        <button id="zwb_save_user_btn" class="menu_button" type="button">确认写入 USER.md</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="zwb-tab-content" id="tab-memory">
+            <div class="zwb-two-col">
+                <div class="zwb-block">
+                    <h3>记忆文件列表</h3>
+                    <div id="zwb_memory_list" class="zwb-list-box">尚未加载。</div>
+                    <div class="zwb-panel-actions">
+                        <button id="zwb_reload_memory_btn" class="menu_button" type="button">刷新记忆列表</button>
+                        <button id="zwb_activate_memory_btn" class="menu_button" type="button">设为当前启用文件</button>
+                    </div>
+                </div>
+                <div class="zwb-block">
+                    <h3>记忆内容编辑区</h3>
+                    <div class="zwb-form-grid">
+                        <div class="zwb-form-item">
+                            <label for="zwb_memory_file_input">当前文件名</label>
+                            <input id="zwb_memory_file_input" class="text_pole" type="text" placeholder="请选择一个 Memory 文件" />
+                        </div>
+                        <div class="zwb-form-item-full">
+                            <label for="zwb_memory_preview_editor">当前文件预览（JSONL 友好模式）</label>
+                            <textarea id="zwb_memory_preview_editor" class="text_pole zwb-large-textarea" placeholder="这里会显示当前记忆文件的可读内容"></textarea>
+                        </div>
+                        <div class="zwb-form-item-full">
+                            <label for="zwb_memory_markdown_editor">MEMORY.md 编辑区</label>
+                            <textarea id="zwb_memory_markdown_editor" class="text_pole zwb-large-textarea" placeholder="这里可以编辑 MEMORY.md，也可以从世界书导入条目"></textarea>
+                        </div>
+                        <div class="zwb-form-item">
+                            <label for="zwb_worldbook_select">世界书</label>
+                            <select id="zwb_worldbook_select" class="text_pole"></select>
+                        </div>
+                        <div class="zwb-form-item-full">
+                            <label>世界书条目</label>
+                            <div id="zwb_worldbook_entries" class="zwb-list-box">尚未加载世界书条目。</div>
+                        </div>
+                    </div>
+                    <div class="zwb-panel-actions">
+                        <button id="zwb_save_memory_btn" class="menu_button" type="button">保存当前记忆文件</button>
+                        <button id="zwb_save_memory_markdown_btn" class="menu_button" type="button">保存 MEMORY.md</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="zwb-tab-content" id="tab-summary">
+            <div class="zwb-two-col">
+                <div class="zwb-block">
+                    <h3>Summary 文件列表</h3>
+                    <div id="zwb_summary_list" class="zwb-list-box">尚未加载。</div>
+                </div>
+                <div class="zwb-block">
+                    <h3>日记阅读区</h3>
+                    <textarea id="zwb_summary_preview_editor" class="text_pole zwb-large-textarea" placeholder="请选择一份 Summary 文件"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="zwb-tab-content" id="tab-sensor">
+            <div class="zwb-two-col">
+                <div class="zwb-block">
+                    <h3>Sensor 映射表</h3>
+                    <div id="zwb_sensor_map_editor" class="zwb-list-box">尚未加载。</div>
+                    <div class="zwb-panel-actions">
+                        <button id="zwb_add_sensor_row_btn" class="menu_button" type="button">新增映射行</button>
+                        <button id="zwb_save_sensor_map_btn" class="menu_button" type="button">保存 sensor_map.json</button>
+                        <button id="zwb_reload_sensor_map_btn" class="menu_button" type="button">重新读取</button>
+                    </div>
+                </div>
+                <div class="zwb-block">
+                    <h3>说明</h3>
+                    <div class="zwb-output-box">`sensor_map.json` 用于给指定 APP 名称补充解释提示词，Bot 在读取到手机动态后会把这些解释拼进提供给 LLM 的上下文。你可以把左侧视为“APP 名称字段”，右侧视为“附加解释提示词字段”。</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="zwb-tab-content" id="tab-backup">
+            <div class="zwb-card-grid">
+                <div class="zwb-card zwb-card-danger">
+                    <h3>最高优先级保护</h3>
+                    <div>`accounts/` 中保存的是不可再生的微信鉴权文件。即使插件不写它，也会默认强制纳入备份。</div>
+                </div>
+                <div class="zwb-card">
+                    <h3>标准备份范围</h3>
+                    <div>`accounts/`、`config.json`、`sensor_map.json`、`workspace/`、`Memory/`</div>
+                </div>
+            </div>
+            <div class="zwb-panel-actions">
+                <input id="zwb_backup_now_btn" class="menu_button" type="submit" value="立即创建备份" />
+                <input id="zwb_refresh_backup_btn" class="menu_button" type="submit" value="刷新备份列表" />
+            </div>
+            <div class="zwb-form-grid">
+                <div class="zwb-form-item">
+                    <label for="zwb_backup_restore_select">选择要恢复的备份</label>
+                    <select id="zwb_backup_restore_select" class="text_pole"></select>
+                </div>
+                <div class="zwb-form-item zwb-form-item-full">
+                    <button id="zwb_restore_backup_btn" class="menu_button" type="button">恢复所选备份</button>
+                </div>
+            </div>
+            <div id="zwb_backup_list" class="zwb-list-box">尚未加载备份列表。</div>
+        </div>
+    </div>
+</div>

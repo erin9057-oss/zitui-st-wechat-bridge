@@ -1,0 +1,11 @@
+{
+  "display_name": "微信 Bot 桥接中心",
+  "loading_order": 9,
+  "requires": [],
+  "optional": [],
+  "js": "index.js",
+  "css": "style.css",
+  "author": "Manus AI",
+  "version": "0.1.0",
+  "homePage": "https://github.com/erin9057-oss/zitui-st-wechat-bridge"
+}
