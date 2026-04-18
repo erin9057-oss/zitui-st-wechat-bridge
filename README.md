@@ -14,6 +14,10 @@
 
 ## 安装方式
 
+本项目需要分成 **前端扩展** 和 **server-plugin** 两步安装。
+
+### 第一步：安装前端扩展
+
 现在可以直接把仓库地址填入 SillyTavern 的 **“从 URL 安装扩展”** 输入框：
 
 ```text
@@ -21,6 +25,29 @@ https://github.com/erin9057-oss/zitui-st-wechat-bridge
 ```
 
 之所以这样调整，是因为酒馆的 URL 安装机制要求 `manifest.json`、`index.js` 等核心文件位于仓库根目录；当前仓库已经按该要求重构完成。
+
+### 第二步：安装 server-plugin
+
+请在终端执行：
+
+```bash
+bash <(curl -sSL https://raw.githubusercontent.com/erin9057-oss/zitui-st-wechat-bridge/main/install-server-plugin.sh)
+```
+
+安装脚本会优先检查以下目录：
+
+| 检查顺序 | 路径 |
+|---|---|
+| 1 | `~/SillyTavern/plugins` |
+| 2 | `~/ST/plugins` |
+
+如果两处都没找到，脚本会提示你输入 **SillyTavern 根目录**。你只需要输入酒馆根目录，**不需要手动输入 `/plugins`**，脚本会自动补上，并且全程使用绝对路径，不依赖你当前在哪个目录执行 `curl`。
+
+如果你想手动指定酒馆根目录，也可以这样运行：
+
+```bash
+ST_ROOT=/绝对路径/到/SillyTavern bash <(curl -sSL https://raw.githubusercontent.com/erin9057-oss/zitui-st-wechat-bridge/main/install-server-plugin.sh)
+```
 
 ## 当前开发目标
 
