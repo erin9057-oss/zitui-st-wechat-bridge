@@ -16,6 +16,10 @@ let 当前记忆列表 = null;
 let 当前记忆文件数据 = null;
 let 当前传感映射 = {};
 let 当前备份列表 = [];
+let 设置事件已绑定 = false;
+let 模态框事件已绑定 = false;
+let 按钮事件已绑定 = false;
+let 备份按钮事件已绑定 = false;
 
 function 获取设置() {
     extension_settings[extensionName] = extension_settings[extensionName] || {};
@@ -72,20 +76,29 @@ function 渲染设置到界面() {
 }
 
 function 绑定设置事件() {
-    $("#zwb_local_base_dir").on("input", function () {
-        获取设置().local_base_dir = String($(this).val() || "").trim();
-        保存设置();
-    });
+    if (设置事件已绑定) return;
+    设置事件已绑定 = true;
 
-    $("#zwb_enable_http_mode").on("input", function () {
-        获取设置().enable_http_mode = Boolean($(this).prop("checked"));
-        保存设置();
-    });
+    $(document)
+        .off("input.zwbSettings", "#zwb_local_base_dir")
+        .on("input.zwbSettings", "#zwb_local_base_dir", function () {
+            获取设置().local_base_dir = String($(this).val() || "").trim();
+            保存设置();
+        });
 
-    $("#zwb_remote_base_url").on("input", function () {
-        获取设置().remote_base_url = String($(this).val() || "").trim();
-        保存设置();
-    });
+    $(document)
+        .off("input.zwbSettings", "#zwb_enable_http_mode")
+        .on("input.zwbSettings", "#zwb_enable_http_mode", function () {
+            获取设置().enable_http_mode = Boolean($(this).prop("checked"));
+            保存设置();
+        });
+
+    $(document)
+        .off("input.zwbSettings", "#zwb_remote_base_url")
+        .on("input.zwbSettings", "#zwb_remote_base_url", function () {
+            获取设置().remote_base_url = String($(this).val() || "").trim();
+            保存设置();
+        });
 }
 
 function 解析键路径(obj, segments, defaultValue = undefined) {
@@ -871,18 +884,49 @@ function 当前模态框骨架有效() {
     return modal.length > 0 && modal.find(".zwb-modal-wrapper").length > 0 && modal.find(".zwb-tab-content").length > 0;
 }
 
-function 显示桥接中心模态框() {
+async function 确保界面骨架已注入({ 重新加载面板 = false, 重新加载模态框 = false } = {}) {
+    const 需要注入面板 = 重新加载面板 || !$("#zwb_open_modal_btn").length;
+    if (需要注入面板) {
+        const panelHtml = await $.get(`${extensionFolderPath}/templates/panel.html`);
+        if (!$("#zwb_open_modal_btn").length) {
+            $("#extensions_settings").append(panelHtml);
+        }
+    }
+
+    const 需要注入模态框 = 重新加载模态框 || !当前模态框骨架有效();
+    if (需要注入模态框) {
+        const modalHtml = await $.get(`${extensionFolderPath}/templates/modal.html`);
+        if (!模态框模板有效(modalHtml)) {
+            throw new Error("templates/modal.html 不是有效的桥接中心 HTML 模板");
+        }
+        清理已注入界面();
+        $("body").append(modalHtml);
+    }
+
     if (!当前模态框骨架有效()) {
-        toastr.error("桥接中心模板未正确加载，请刷新扩展后重试");
+        throw new Error("桥接中心模板注入后未生成有效面板骨架");
+    }
+}
+
+async function 显示桥接中心模态框() {
+    try {
+        await 确保界面骨架已注入({ 重新加载模态框: !当前模态框骨架有效() });
+    } catch (error) {
+        toastr.error(`桥接中心模板未正确加载：${error.message}`);
         return false;
     }
+
     $("html, body").addClass("zwb-modal-open");
-    $("#zwb_modal_container").addClass("is-visible");
+    $("#zwb_modal_container")
+        .addClass("is-visible")
+        .css({ display: "flex", visibility: "visible", opacity: "1", pointerEvents: "auto" });
     return true;
 }
 
 function 隐藏桥接中心模态框() {
-    $("#zwb_modal_container").removeClass("is-visible");
+    $("#zwb_modal_container")
+        .removeClass("is-visible")
+        .css({ display: "", visibility: "", opacity: "", pointerEvents: "" });
     $("html, body").removeClass("zwb-modal-open");
 }
 
@@ -891,6 +935,9 @@ function 清理已注入界面() {
 }
 
 function 绑定备份按钮事件() {
+    if (备份按钮事件已绑定) return;
+    备份按钮事件已绑定 = true;
+
     $("body").on("click", "#zwb_backup_now_btn", async () => {
         try {
             const result = await 请求接口("/backup/create");
@@ -912,11 +959,14 @@ function 绑定备份按钮事件() {
 }
 
 function 绑定模态框事件() {
+    if (模态框事件已绑定) return;
+    模态框事件已绑定 = true;
+
     $("body").on("click", "#zwb_open_modal_btn", async (event) => {
         event.preventDefault();
         event.stopPropagation();
-        
-        if (!显示桥接中心模态框()) {
+
+        if (!await 显示桥接中心模态框()) {
             return;
         }
 
@@ -943,6 +993,9 @@ function 绑定模态框事件() {
 }
 
 function 绑定按钮事件() {
+    if (按钮事件已绑定) return;
+    按钮事件已绑定 = true;
+
     $("body").on("click", "#zwb_ping_btn", async (event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -1238,29 +1291,18 @@ function 绑定按钮事件() {
 }
 
 async function 初始化界面() {
-    const panelHtml = await $.get(`${extensionFolderPath}/templates/panel.html`);
-    const modalHtml = await $.get(`${extensionFolderPath}/templates/modal.html`);
+    await 确保界面骨架已注入({ 重新加载面板: true, 重新加载模态框: true });
 
-    if (!模态框模板有效(modalHtml)) {
-        throw new Error("templates/modal.html 不是有效的桥接中心 HTML 模板");
-    }
-
-    if (!$("#zwb_open_modal_btn").length) {
-        $("#extensions_settings").append(panelHtml);
-    }
-
-    清理已注入界面();
-    $("body").append(modalHtml);
-
-    if (!当前模态框骨架有效()) {
-        throw new Error("桥接中心模板注入后未生成有效面板骨架");
-    }
-
-    渲染设置到界面();
     绑定设置事件();
     绑定模态框事件();
     绑定按钮事件();
     绑定备份按钮事件();
+
+    try {
+        渲染设置到界面();
+    } catch (error) {
+        console.warn("桥接中心设置渲染失败，但打开入口仍可继续使用:", error);
+    }
 }
 
 jQuery(async () => {
