@@ -8,9 +8,19 @@
 
 | 路径 | 作用 |
 |---|---|
-| `extension/` | 酒馆前端扩展，包含设置入口、模态框界面、样式与前端逻辑 |
+| `manifest.json` / `index.js` / `style.css` / `templates/` | 酒馆前端扩展核心文件，已放在仓库根目录，便于直接通过“从 URL 安装扩展”加载 |
 | `server-plugin/` | 酒馆服务器插件，负责本地路径模式与 HTTP 模式的桥接访问 |
 | `docs/` | 接口约定、数据结构与后续开发文档 |
+
+## 安装方式
+
+现在可以直接把仓库地址填入 SillyTavern 的 **“从 URL 安装扩展”** 输入框：
+
+```text
+https://github.com/erin9057-oss/zitui-st-wechat-bridge
+```
+
+之所以这样调整，是因为酒馆的 URL 安装机制要求 `manifest.json`、`index.js` 等核心文件位于仓库根目录；当前仓库已经按该要求重构完成。
 
 ## 当前开发目标
 
