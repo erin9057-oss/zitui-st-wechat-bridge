@@ -33,7 +33,7 @@ html.zwb-modal-open {
     margin-bottom: 12px;
 }
 
-/* 核心布局：全屏弹性容器，只允许内容区内部滚动 */
+/* 核心布局：全屏弹性容器，纯CSS控制显隐 */
 .zwb-modal-container {
     position: fixed;
     top: 0;
@@ -48,6 +48,19 @@ html.zwb-modal-open {
     padding: 20px;
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
+    
+    /* 默认隐藏状态 */
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+/* 激活状态 */
+.zwb-modal-container.is-visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
 }
 
 .zwb-modal-wrapper {
@@ -223,7 +236,6 @@ html.zwb-modal-open {
     padding: 10px; /* 增加触摸面积 */
 }
 
-/* 单个按钮或者强调按钮可以霸占一整行 */
 .zwb-panel-actions .menu_button.full-width {
     flex: 1 1 100%;
 }
@@ -261,7 +273,6 @@ html.zwb-modal-open {
         padding: 16px;
     }
 
-    /* 手机端编辑器默认高度降低，防止占满一屏 */
     .zwb-json-textarea {
         height: 25vh !important; 
         min-height: 150px;
