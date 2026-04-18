@@ -623,11 +623,23 @@ async function 加载全部核心数据() {
     await 刷新备份列表();
 }
 
+function 显示桥接中心模态框() {
+    $("#zwb_modal_container").stop(true, true).css({
+        display: "flex",
+        opacity: "1",
+        visibility: "visible",
+    });
+}
+
+function 隐藏桥接中心模态框() {
+    $("#zwb_modal_container").stop(true, true).fadeOut("fast");
+}
+
 function 绑定模态框事件() {
     $("body").on("click", "#zwb_open_modal_btn", async (event) => {
         event.preventDefault();
         event.stopPropagation();
-        $("#zwb_modal_container").css("display", "flex").hide().fadeIn("fast");
+        显示桥接中心模态框();
         try {
             await 加载全部核心数据();
             toastr.success("桥接中心已加载");
@@ -636,9 +648,9 @@ function 绑定模态框事件() {
         }
     });
 
-    $("body").on("click", "#zwb_modal_close", () => $("#zwb_modal_container").fadeOut("fast"));
+    $("body").on("click", "#zwb_modal_close", () => 隐藏桥接中心模态框());
     $("body").on("click", "#zwb_modal_container", function (event) {
-        if (event.target === this) $(this).fadeOut("fast");
+        if (event.target === this) 隐藏桥接中心模态框();
     });
 
 

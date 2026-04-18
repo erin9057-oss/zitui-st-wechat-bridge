@@ -37,25 +37,36 @@
 .zwb-modal-container {
     position: fixed;
     inset: 0;
-    z-index: 3000;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    width: 100dvw;
+    height: 100vh;
+    height: 100dvh;
+    z-index: 2147483000;
     display: none;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.72);
+    background: rgba(0, 0, 0, 0.84);
     padding: 24px;
     box-sizing: border-box;
+    overflow: hidden;
+    isolation: isolate;
 }
 
 .zwb-modal-wrapper {
     position: relative;
     width: min(1380px, 96vw);
+    max-width: 1380px;
     height: min(900px, 94vh);
+    max-height: 94vh;
+    max-height: 94dvh;
     overflow: hidden;
     border-radius: 18px;
     background: var(--SmartThemeBlurTintColor, #1d1d1f);
     color: var(--SmartThemeBodyColor);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
     padding: 24px;
     box-sizing: border-box;
 }
@@ -264,10 +275,23 @@
 }
 
 @media (max-width: 980px) {
+    .zwb-modal-container {
+        padding: 0;
+    }
+
     .zwb-modal-wrapper {
-        width: 100%;
-        height: 100%;
+        width: 100vw;
+        width: 100dvw;
+        height: 100vh;
+        height: 100dvh;
+        max-height: 100vh;
+        max-height: 100dvh;
         border-radius: 0;
+        padding: 16px;
+    }
+
+    .zwb-tab-content {
+        height: calc(100% - 150px);
     }
 
     .zwb-card-grid,
