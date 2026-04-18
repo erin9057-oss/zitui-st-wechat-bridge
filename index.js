@@ -287,10 +287,7 @@ function 读取运行配置表单() {
 }
 
 function 获取酒馆上下文() {
-    // 优先使用上方 import 进来的官方原生 getContext
     if (typeof getContext === "function") return getContext();
-    
-    // 兜底
     if (typeof window.getContext === "function") return window.getContext();
     if (window.SillyTavern && typeof window.SillyTavern.getContext === "function") return window.SillyTavern.getContext();
     if (typeof globalThis.getContext === "function") return globalThis.getContext();
@@ -298,11 +295,11 @@ function 获取酒馆上下文() {
 }
 
 function 获取稳定接口(fnName) {
-    const context = 获取酒馆上下文();
-    if (context && typeof context[fnName] === "function") return context[fnName].bind(context);
-    if (window.SillyTavern && typeof window.SillyTavern[fnName] === "function") return window.SillyTavern[fnName].bind(window.SillyTavern);
-    if (typeof window[fnName] === "function") return window[fnName].bind(window);
-    if (typeof globalThis[fnName] === "function") return globalThis[fnName].bind(globalThis);
+    // 修复关键：直接返回匹配到的全局函数，绝对不要使用 .bind()，以免破坏酒馆函数的内部上下文
+    if (typeof window !== 'undefined' && typeof window[fnName] === "function") return window[fnName];
+    if (typeof window !== 'undefined' && window.SillyTavern && typeof window.SillyTavern[fnName] === "function") return window.SillyTavern[fnName];
+    if (typeof window !== 'undefined' && window.TavernHelper && typeof window.TavernHelper[fnName] === "function") return window.TavernHelper[fnName];
+    if (typeof globalThis !== 'undefined' && typeof globalThis[fnName] === "function") return globalThis[fnName];
     return null;
 }
 
@@ -415,7 +412,6 @@ async function 刷新世界书条目显示(worldbookName) {
 }
 
 function 提取当前角色信息() {
-    // 1. 优先使用 import 进来的官方宏替换函数（最稳定，能直接拿到替换后的最终文本）
     if (typeof substituteParams === "function") {
         return {
             name: substituteParams('{{char}}') || "未命名角色",
@@ -427,7 +423,6 @@ function 提取当前角色信息() {
         };
     }
 
-    // 2. 兜底方案：翻最新的上下文对象
     const context = 获取酒馆上下文();
     if (!context) return null;
     const character = context.characters?.[context.characterId] || context.character || null;
@@ -444,7 +439,6 @@ function 提取当前角色信息() {
 }
 
 function 提取当前User信息() {
-    // 1. 优先使用 import 进来的官方宏替换函数
     if (typeof substituteParams === "function") {
         return {
             name: substituteParams('{{user}}') || "User",
@@ -452,7 +446,6 @@ function 提取当前User信息() {
         };
     }
 
-    // 2. 兜底方案：翻最新的上下文对象
     const context = 获取酒馆上下文();
     if (!context) return null;
 
