@@ -624,20 +624,23 @@ async function 加载全部核心数据() {
 }
 
 function 绑定模态框事件() {
-    $("#zwb_open_modal_btn").on("click", async () => {
+    $("body").on("click", "#zwb_open_modal_btn", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
         $("#zwb_modal_container").css("display", "flex").hide().fadeIn("fast");
         try {
             await 加载全部核心数据();
             toastr.success("桥接中心已加载");
         } catch (error) {
-            toastr.error(`读取桥接数据失败：${error.message}`);
+            toastr.error(`桥接中心加载失败：${error.message}`);
         }
     });
 
-    $("#zwb_modal_close").on("click", () => $("#zwb_modal_container").fadeOut("fast"));
-    $("#zwb_modal_container").on("click", function (event) {
+    $("body").on("click", "#zwb_modal_close", () => $("#zwb_modal_container").fadeOut("fast"));
+    $("body").on("click", "#zwb_modal_container", function (event) {
         if (event.target === this) $(this).fadeOut("fast");
     });
+
 
     $("body").on("click", ".zwb-tab-btn", function () {
         const tabId = $(this).data("tab");
@@ -649,7 +652,9 @@ function 绑定模态框事件() {
 }
 
 function 绑定按钮事件() {
-    $("#zwb_ping_btn").on("click", async () => {
+    $("body").on("click", "#zwb_ping_btn", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
         try {
             await 检测连接状态();
             toastr.success("连接检测成功");
