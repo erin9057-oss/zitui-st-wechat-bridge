@@ -411,6 +411,20 @@ async function 刷新世界书条目显示(worldbookName) {
 }
 
 function 提取当前角色信息() {
+    // 优先尝试使用酒馆官方宏提取（最稳定）
+    const fnSub = 获取稳定接口("substitudeMacros");
+    if (fnSub) {
+        return {
+            name: fnSub('{{char}}') || "未命名角色",
+            description: fnSub('{{description}}') || "",
+            personality: fnSub('{{personality}}') || "",
+            scenario: fnSub('{{scenario}}') || "",
+            mes_example: fnSub('{{mesExamples}}') || "",
+            first_mes: fnSub('{{firstMessage}}') || "",
+        };
+    }
+
+    // 兜底方案：硬翻上下文对象（旧版酒馆兼容）
     const context = 获取酒馆上下文();
     if (!context) return null;
     const character = context.characters?.[context.characterId] || context.character || null;
@@ -427,6 +441,16 @@ function 提取当前角色信息() {
 }
 
 function 提取当前User信息() {
+    // 优先尝试使用酒馆官方宏提取（最稳定）
+    const fnSub = 获取稳定接口("substitudeMacros");
+    if (fnSub) {
+        return {
+            name: fnSub('{{user}}') || "User",
+            description: fnSub('{{persona}}') || "",
+        };
+    }
+
+    // 兜底方案：硬翻上下文对象（旧版酒馆兼容）
     const context = 获取酒馆上下文();
     if (!context) return null;
 
