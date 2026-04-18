@@ -1,269 +1,384 @@
-/* 强制阻止酒馆的 box-sizing 干扰 */
-#zwb_modal_container * { box-sizing: border-box; }
+/* 微信 Bot 桥接中心基础样式 */
 
-/* 防止 100vw 引发的横向溢出 */
-#zwb_modal_container {
-    max-width: 100%;
-    overflow-x: hidden !important;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 2500; /* 死死锁定在 2500，确保在酒馆抽屉之上，且不遮挡报错 */
-    background: rgba(0, 0, 0, 0.75);
-    display: none; /* 默认隐藏，由 JS 的 fadeIn 接管 */
-    align-items: center;
-    justify-content: center;
-    padding: 15px;
+:root {
+    --zwb-surface-solid: rgba(22, 24, 29, 0.96);
+    --zwb-surface-soft: rgba(31, 34, 41, 0.94);
+    --zwb-surface-card: rgba(39, 43, 52, 0.96);
+    --zwb-surface-border: rgba(255, 255, 255, 0.14);
+    --zwb-text-main: #f3f4f7;
+    --zwb-text-subtle: rgba(243, 244, 247, 0.82);
+    --zwb-accent: #7aa2ff;
+    --zwb-accent-soft: rgba(122, 162, 255, 0.22);
+    --zwb-danger-soft: rgba(255, 99, 132, 0.18);
+    --zwb-warning-soft: rgba(255, 193, 7, 0.18);
 }
 
-/* 抛弃 CSS 变量和透明度，全部使用硬编码实体颜色 */
+body.zwb-modal-open,
+html.zwb-modal-open {
+    overflow: hidden !important;
+    overscroll-behavior: none;
+}
+
+#toast-container {
+    z-index: 2147483600 !important;
+}
+
+.zwb-extension-settings {
+    margin-top: 8px;
+}
+
+.zwb-panel-desc {
+    margin: 8px 0 12px;
+    line-height: 1.7;
+    color: var(--zwb-text-main);
+    text-shadow: none;
+}
+
+.zwb-panel-row {
+    margin-bottom: 10px;
+}
+
+.zwb-panel-row label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.zwb-panel-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 12px 0;
+}
+
+.zwb-status-hint {
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--zwb-surface-soft);
+    border: 1px solid var(--zwb-surface-border);
+    color: var(--zwb-text-main);
+    line-height: 1.6;
+    text-shadow: none;
+}
+
+.zwb-modal-container {
+    position: fixed;
+    inset: 0;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    width: 100dvw;
+    height: 100vh;
+    height: 100dvh;
+    z-index: 2147483000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(3, 5, 10, 0.82);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 24px;
+    box-sizing: border-box;
+    overflow: auto;
+    overscroll-behavior: contain;
+    isolation: isolate;
+}
+
 .zwb-modal-wrapper {
-    background-color: #1c1e23 !important; 
-    color: #f3f4f7 !important;
-    width: 100%;
-    max-width: 900px;
-    height: 90vh; /* 使用最安全的 vh */
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 12px;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+    position: relative;
+    width: min(1380px, 96vw);
+    max-width: 1380px;
+    height: min(900px, 94vh);
+    max-height: 94vh;
+    max-height: 94dvh;
+    overflow: auto;
+    overscroll-behavior: contain;
+    border-radius: 18px;
+    background: linear-gradient(180deg, rgba(23, 26, 33, 0.98) 0%, rgba(17, 19, 24, 0.98) 100%);
+    color: var(--zwb-text-main);
+    border: 1px solid var(--zwb-surface-border);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+    padding: 24px;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    position: relative;
-    overflow: hidden;
 }
 
 .zwb-modal-close {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    background: transparent;
+    position: sticky;
+    top: 0;
+    margin-left: auto;
+    right: 0;
+    width: 40px;
+    height: 40px;
     border: none;
-    color: #f3f4f7 !important;
-    font-size: 28px;
-    font-weight: bold;
+    border-radius: 999px;
     cursor: pointer;
-    line-height: 1;
-    z-index: 20;
-    opacity: 0.7;
-}
-
-.zwb-modal-close:hover {
-    opacity: 1;
+    font-size: 24px;
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--zwb-text-main);
+    z-index: 3;
 }
 
 .zwb-modal-header {
-    padding: 18px 20px 12px 20px;
-    flex-shrink: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 16px;
+    padding-right: 0;
 }
 
 .zwb-modal-header h2 {
-    margin: 0 0 5px 0;
-    font-size: 20px;
-    font-weight: 600;
-    color: #f3f4f7 !important;
+    margin: 0 0 8px;
 }
 
 .zwb-modal-runtime {
-    font-size: 12px;
-    color: #7aa2ff !important;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--zwb-surface-soft);
+    border: 1px solid var(--zwb-surface-border);
+    color: var(--zwb-text-main);
+    line-height: 1.6;
 }
 
-/* Tab 导航栏 */
 .zwb-tab-nav {
     display: flex;
-    padding: 0 10px;
-    background-color: #141518;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    flex-shrink: 0;
-    overflow-x: auto;
-    white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
 }
 
-.zwb-tab-nav::-webkit-scrollbar { height: 4px; }
-.zwb-tab-nav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 2px; }
-
 .zwb-tab-btn {
-    background: transparent;
-    border: none;
-    color: #aaaaaa !important;
-    padding: 12px 16px;
-    font-size: 14px;
-    font-weight: bold;
+    border: 1px solid var(--zwb-surface-border);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--zwb-text-main);
+    border-radius: 999px;
+    padding: 9px 14px;
     cursor: pointer;
-    border-bottom: 3px solid transparent;
-    transition: all 0.2s;
+    text-shadow: none;
 }
 
 .zwb-tab-btn.active {
-    color: #7aa2ff !important;
-    border-bottom: 3px solid #7aa2ff;
+    background: var(--zwb-accent-soft);
+    border-color: rgba(122, 162, 255, 0.65);
+    color: #ffffff;
 }
 
-/* 内容滚动区 */
 .zwb-tab-content {
     display: none;
-    flex-grow: 1;
-    overflow-y: auto;
-    padding: 20px;
-    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+    overflow: visible;
+    padding-right: 4px;
+    padding-bottom: 24px;
+    flex: 1 1 auto;
 }
 
 .zwb-tab-content.active {
     display: block;
-    animation: zwbFadeIn 0.3s;
 }
 
-@keyframes zwbFadeIn {
-    from { opacity: 0; transform: translateY(3px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* 内部网格布局 */
-.zwb-form-grid, .zwb-section-grid {
+.zwb-card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 15px;
-    margin-bottom: 15px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.zwb-card,
+.zwb-block {
+    border-radius: 14px;
+    padding: 14px 16px;
+    background: var(--zwb-surface-card);
+    border: 1px solid var(--zwb-surface-border);
+    box-sizing: border-box;
+    color: var(--zwb-text-main);
+    text-shadow: none;
+}
+
+.zwb-card h3,
+.zwb-block h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.zwb-card-warning {
+    border-color: rgba(255, 193, 7, 0.45);
+    background: linear-gradient(180deg, var(--zwb-surface-card) 0%, var(--zwb-warning-soft) 100%);
+}
+
+.zwb-card-danger {
+    border-color: rgba(255, 99, 132, 0.45);
+    background: linear-gradient(180deg, var(--zwb-surface-card) 0%, var(--zwb-danger-soft) 100%);
+}
+
+.zwb-two-col {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.zwb-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
 }
 
 .zwb-form-item {
     display: flex;
     flex-direction: column;
+    gap: 6px;
 }
 
-.zwb-form-item-full, .zwb-block {
+.zwb-form-item-full {
     grid-column: 1 / -1;
 }
 
-.zwb-block {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 15px;
+.zwb-form-item label {
+    font-weight: 600;
 }
 
-.zwb-block h3, .zwb-card h3 {
-    margin: 0 0 10px 0;
-    font-size: 15px;
-    color: #7aa2ff;
-    border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
-    padding-bottom: 5px;
+.zwb-json-textarea {
+    min-height: 140px;
+    resize: vertical;
 }
 
-.zwb-card-grid {
+.zwb-large-textarea {
+    min-height: 240px;
+    max-height: min(56vh, 620px);
+    resize: vertical;
+}
+
+.zwb-tts-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.zwb-tts-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-    margin-bottom: 15px;
-}
-
-.zwb-card {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 15px;
-}
-
-/* 统一输入框与表单 */
-.zwb-modal-wrapper label {
-    font-size: 13px;
-    color: #dddddd !important;
-    margin-bottom: 6px;
-    font-weight: bold;
-}
-
-.zwb-modal-wrapper input[type="text"],
-.zwb-modal-wrapper input[type="number"],
-.zwb-modal-wrapper select,
-.zwb-modal-wrapper textarea {
-    width: 100%;
+    grid-template-columns: 100px repeat(3, minmax(0, 1fr)) 88px;
+    gap: 10px;
+    align-items: center;
     padding: 10px;
-    background-color: rgba(0, 0, 0, 0.3) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-    color: #f3f4f7 !important;
-    font-size: 14px;
-    font-family: inherit;
-    outline: none;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     box-sizing: border-box;
 }
 
-.zwb-json-textarea, .zwb-large-textarea {
-    min-height: 120px;
-    resize: vertical;
-    line-height: 1.5;
+.zwb-tts-row-head {
+    font-weight: 700;
 }
 
-.zwb-output-box, .zwb-list-box, .zwb-worldbook-names {
-    background-color: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 6px;
+.zwb-worldbook-entry {
     padding: 10px;
-    font-size: 13px;
-    color: #dddddd;
-    line-height: 1.6;
-    min-height: 60px;
-    max-height: 300px;
-    overflow-y: auto;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 10px;
+}
+
+.zwb-worldbook-entry-title {
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.zwb-worldbook-entry-preview {
+    white-space: pre-wrap;
+    line-height: 1.7;
+    margin-bottom: 8px;
+    opacity: 0.92;
+}
+
+.zwb-sensor-row {
+    display: grid;
+    grid-template-columns: 220px 1fr 88px;
+    gap: 10px;
+    align-items: start;
+    margin-bottom: 10px;
+}
+
+.zwb-sensor-desc {
+    min-height: 88px;
+    resize: vertical;
+}
+
+.zwb-output-box,
+.zwb-list-box {
+    min-height: 220px;
+    border-radius: 12px;
+    padding: 12px;
+    white-space: pre-wrap;
     word-break: break-word;
+    line-height: 1.75;
+    background: rgba(8, 10, 15, 0.78);
+    border: 1px solid var(--zwb-surface-border);
+    box-sizing: border-box;
+    color: var(--zwb-text-main);
+    overflow: auto;
+    overscroll-behavior: contain;
 }
 
 .zwb-note {
-    font-size: 13px;
-    color: #aaaaaa;
-    margin-bottom: 10px;
-    line-height: 1.5;
+    margin-top: 0;
+    margin-bottom: 12px;
+    opacity: 0.9;
+    line-height: 1.7;
 }
 
-/* 按钮组 */
-.zwb-panel-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 15px;
-}
-
-.zwb-panel-actions .menu_button {
-    flex: 1 1 calc(50% - 8px);
-    margin: 0;
-    padding: 10px;
-    text-align: center;
-    background-color: rgba(122, 162, 255, 0.15) !important;
-    color: #f3f4f7 !important;
-    border: 1px solid rgba(122, 162, 255, 0.3);
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.zwb-panel-actions .menu_button:hover {
-    background-color: rgba(122, 162, 255, 0.3) !important;
-}
-
-.zwb-panel-actions .menu_button.full-width {
-    flex: 1 1 100%;
-}
-
-/* ===== 移动端专属强制满屏 ===== */
-@media (max-width: 768px) {
-    #zwb_modal_container {
+@media (max-width: 980px) {
+    .zwb-modal-container {
         padding: 0;
+        align-items: stretch;
     }
+
     .zwb-modal-wrapper {
-        height: 100%;
+        width: 100vw;
+        width: 100dvw;
+        height: 100vh;
+        height: 100dvh;
+        max-height: 100vh;
+        max-height: 100dvh;
         border-radius: 0;
-        border: none;
+        padding: 14px;
+        -webkit-overflow-scrolling: touch;
+        overflow-y: auto;
+        overflow-x: hidden;
     }
+
+    .zwb-modal-header,
+    .zwb-tab-nav,
     .zwb-tab-content {
-        padding: 15px;
-        padding-bottom: 60px; /* 防止内容被手机底栏挡住 */
+        position: relative;
+        z-index: 1;
     }
-    .zwb-json-textarea {
-        min-height: 100px;
+
+    .zwb-tab-nav {
+        position: sticky;
+        top: 0;
+        background: rgba(17, 19, 24, 0.96);
+        padding: 8px 0 10px;
+        z-index: 2;
+    }
+
+    .zwb-card-grid,
+    .zwb-two-col,
+    .zwb-form-grid,
+    .zwb-tts-row,
+    .zwb-sensor-row {
+        grid-template-columns: 1fr;
+    }
+
+    .zwb-large-textarea,
+    .zwb-output-box,
+    .zwb-list-box {
+        min-height: 180px;
+        max-height: 42dvh;
+    }
+
+    .zwb-panel-actions {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+        background: rgba(17, 19, 24, 0.96);
+        padding-top: 8px;
+        padding-bottom: 4px;
     }
 }
