@@ -1,5 +1,5 @@
-import { extension_settings } from "../../../extensions.js";
-import { saveSettingsDebounced, getRequestHeaders } from "../../../../script.js";
+import { extension_settings, getContext } from "../../../extensions.js";
+import { saveSettingsDebounced, getRequestHeaders, substituteParams } from "../../../../script.js";
 
 const extensionName = "zitui-st-wechat-bridge";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
@@ -287,6 +287,10 @@ function 读取运行配置表单() {
 }
 
 function 获取酒馆上下文() {
+    // 优先使用上方 import 进来的官方原生 getContext
+    if (typeof getContext === "function") return getContext();
+    
+    // 兜底
     if (typeof window.getContext === "function") return window.getContext();
     if (window.SillyTavern && typeof window.SillyTavern.getContext === "function") return window.SillyTavern.getContext();
     if (typeof globalThis.getContext === "function") return globalThis.getContext();
@@ -411,20 +415,19 @@ async function 刷新世界书条目显示(worldbookName) {
 }
 
 function 提取当前角色信息() {
-    // 优先尝试使用酒馆官方宏提取（最稳定）
-    const fnSub = 获取稳定接口("substitudeMacros");
-    if (fnSub) {
+    // 1. 优先使用 import 进来的官方宏替换函数（最稳定，能直接拿到替换后的最终文本）
+    if (typeof substituteParams === "function") {
         return {
-            name: fnSub('{{char}}') || "未命名角色",
-            description: fnSub('{{description}}') || "",
-            personality: fnSub('{{personality}}') || "",
-            scenario: fnSub('{{scenario}}') || "",
-            mes_example: fnSub('{{mesExamples}}') || "",
-            first_mes: fnSub('{{firstMessage}}') || "",
+            name: substituteParams('{{char}}') || "未命名角色",
+            description: substituteParams('{{description}}') || "",
+            personality: substituteParams('{{personality}}') || "",
+            scenario: substituteParams('{{scenario}}') || "",
+            mes_example: substituteParams('{{mesExamples}}') || "",
+            first_mes: substituteParams('{{firstMessage}}') || "",
         };
     }
 
-    // 兜底方案：硬翻上下文对象（旧版酒馆兼容）
+    // 2. 兜底方案：翻最新的上下文对象
     const context = 获取酒馆上下文();
     if (!context) return null;
     const character = context.characters?.[context.characterId] || context.character || null;
@@ -441,16 +444,15 @@ function 提取当前角色信息() {
 }
 
 function 提取当前User信息() {
-    // 优先尝试使用酒馆官方宏提取（最稳定）
-    const fnSub = 获取稳定接口("substitudeMacros");
-    if (fnSub) {
+    // 1. 优先使用 import 进来的官方宏替换函数
+    if (typeof substituteParams === "function") {
         return {
-            name: fnSub('{{user}}') || "User",
-            description: fnSub('{{persona}}') || "",
+            name: substituteParams('{{user}}') || "User",
+            description: substituteParams('{{persona}}') || "",
         };
     }
 
-    // 兜底方案：硬翻上下文对象（旧版酒馆兼容）
+    // 2. 兜底方案：翻最新的上下文对象
     const context = 获取酒馆上下文();
     if (!context) return null;
 
