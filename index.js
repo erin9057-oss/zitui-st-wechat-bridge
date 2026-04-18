@@ -624,10 +624,10 @@ function 解析友好Jsonl文本(text) {
 
 async function 检测连接状态() {
     const statusElement = $("#zwb_status_hint");
-    if (statusElement.length) statusElement.text("当前状态：正在检测...");
+    statusElement.text("当前状态：正在检测...");
     const result = await 请求接口("/health");
     const text = `当前状态：${result.message || "连接正常"}`;
-    if (statusElement.length) statusElement.text(text);
+    statusElement.text(text);
     $("#zwb_modal_runtime").text(text);
 }
 
@@ -823,6 +823,7 @@ async function 加载全部核心数据() {
         try { await fn(); } catch (e) { console.warn("API调用忽略报错，继续执行UI:", e); }
     };
 
+    // 同步并发执行，提升加载速度
     await Promise.all([
         safeCall(检测连接状态),
         safeCall(刷新总览信息),
@@ -833,6 +834,7 @@ async function 加载全部核心数据() {
         safeCall(刷新备份列表)
     ]);
 
+    // 顺序执行
     try {
         await 读取记忆列表();
         if (当前记忆列表?.full_logs?.length) {
@@ -859,16 +861,15 @@ function 配置提示层() {
     };
 }
 
-// 暴力显示防冲突：直接通过 jQuery .css() 改写法，强制推翻之前的 style="display:none;" 锁定
+// 弹窗显隐控制不再使用 jQuery 的 .css() 强行改 display，改用纯 CSS class 稳定过渡
 function 显示桥接中心模态框() {
     $("html, body").addClass("zwb-modal-open");
-    $("#zwb_modal_container").css("display", "flex").hide().fadeIn(250);
+    $("#zwb_modal_container").addClass("is-visible");
 }
 
 function 隐藏桥接中心模态框() {
-    $("#zwb_modal_container").fadeOut(250, () => {
-        $("html, body").removeClass("zwb-modal-open");
-    });
+    $("#zwb_modal_container").removeClass("is-visible");
+    $("html, body").removeClass("zwb-modal-open");
 }
 
 function 绑定模态框事件() {
@@ -876,12 +877,12 @@ function 绑定模态框事件() {
         event.preventDefault();
         event.stopPropagation();
         
-        // 瞬间强制无阻碍弹出 UI
+        // 瞬间无阻碍弹出 UI
         显示桥接中心模态框();
         
         try {
             await 加载全部核心数据();
-            toastr.success("桥接中心加载完毕（即使部分后端报错，界面也可离线使用）");
+            toastr.success("桥接中心加载完毕（即使部分失败界面也可使用）");
         } catch (error) {
             toastr.error(`加载异常：${error.message}`);
         }
