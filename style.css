@@ -6,7 +6,21 @@ html.zwb-modal-open {
     overscroll-behavior: none;
 }
 
-/* 层级锁定 2500：在酒馆普通界面之上，但在酒馆系统弹窗和 Toastr 之下 */
+#toast-container {
+    z-index: 2147483600 !important;
+}
+
+.zwb-extension-settings {
+    margin-top: 8px;
+}
+
+.zwb-panel-desc {
+    font-size: 13px;
+    color: rgba(243, 244, 247, 0.82);
+    margin-bottom: 12px;
+}
+
+/* 层级锁定 2500：在普通界面之上，在酒馆系统提示之下。默认设为 display: none 交给 JS 强控 */
 .zwb-modal-container {
     position: fixed;
     top: 0;
@@ -15,27 +29,14 @@ html.zwb-modal-open {
     bottom: 0;
     z-index: 2500; 
     background: rgba(0, 0, 0, 0.75);
-    display: flex;
+    display: none; 
     align-items: center;
     justify-content: center;
     padding: 20px;
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
-    
-    /* 默认隐藏，由纯 CSS 接管动画防错 */
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition: opacity 0.25s ease, visibility 0.25s ease;
 }
 
-.zwb-modal-container.is-visible {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-}
-
-/* 抛弃 CSS 变量，全部使用硬编码颜色，防止移动端内核吞掉导致全透明 */
 .zwb-modal-wrapper {
     background: rgba(22, 24, 29, 0.98); 
     width: 100%;
@@ -224,14 +225,13 @@ html.zwb-modal-open {
     resize: vertical;
 }
 
-/* ===== 移动端画幅专属适配区 ===== */
 @media (max-width: 768px) {
     .zwb-modal-container {
         padding: 0; 
     }
 
     .zwb-modal-wrapper {
-        height: 100%; /* 使用 100% 替代 100vh，无视 iOS/Android 浏览器的地址栏下推问题 */
+        height: 100%; 
         max-height: none;
         border-radius: 0;
         border: none;
@@ -243,7 +243,6 @@ html.zwb-modal-open {
     
     .zwb-tab-content {
         padding: 16px;
-        /* 为下方预留安全区防止滚动不到底 */
         padding-bottom: 40px; 
     }
 
