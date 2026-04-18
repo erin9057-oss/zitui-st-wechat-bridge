@@ -187,7 +187,7 @@ function 渲染主配置表单() {
     const ttsBlock = $('<div class="zwb-form-item-full zwb-tts-block"></div>');
     ttsBlock.append('<label>语音轮询节点（最多 10 个）</label>');
     ttsBlock.append('<div id="zwb_tts_credentials_editor" class="zwb-tts-editor"></div>');
-    ttsBlock.append('<div class="zwb-panel-actions"><button id="zwb_add_tts_cred_btn" class="menu_button" type="button">新增语音节点</button><button id="zwb_save_main_config_btn" class="menu_button" type="button">保存基础配置</button><button id="zwb_reload_main_config_btn" class="menu_button" type="button">重新读取</button></div>');
+    ttsBlock.append('<div class="zwb-panel-actions"><button id="zwb_add_tts_cred_btn" class="menu_button" type="button">新增语音节点</button><button id="zwb_save_main_config_btn" class="menu_button" type="button" style="background:#5e5c8a;color:white;">保存基础配置</button><button id="zwb_reload_main_config_btn" class="menu_button" type="button">重新读取</button></div>');
     container.append(ttsBlock);
 
     渲染语音节点编辑器();
@@ -206,12 +206,11 @@ function 渲染语音节点编辑器() {
 
     list.forEach((item, index) => {
         const row = $(
-            `<div class="zwb-tts-row">
-                <div class="zwb-tts-row-head">节点 ${index + 1}</div>
-                <input class="text_pole" type="text" data-tts-index="${index}" data-tts-key="appid" placeholder="appid" />
-                <input class="text_pole" type="text" data-tts-index="${index}" data-tts-key="token" placeholder="token" />
-                <input class="text_pole" type="text" data-tts-index="${index}" data-tts-key="voiceId" placeholder="voiceId" />
-                <button class="menu_button zwb-delete-tts-btn" type="button" data-tts-index="${index}">删除</button>
+            `<div class="zwb-tts-row" style="margin-bottom:8px; display:flex; gap:4px;">
+                <input class="text_pole" type="text" data-tts-index="${index}" data-tts-key="appid" placeholder="appid" style="flex:1" />
+                <input class="text_pole" type="text" data-tts-index="${index}" data-tts-key="token" placeholder="token" style="flex:1" />
+                <input class="text_pole" type="text" data-tts-index="${index}" data-tts-key="voiceId" placeholder="voiceId" style="flex:1" />
+                <button class="menu_button zwb-delete-tts-btn" type="button" data-tts-index="${index}" style="margin:0;">删除</button>
             </div>`
         );
         row.find('[data-tts-key="appid"]').val(item.appid || "");
@@ -257,11 +256,11 @@ function 渲染运行配置表单() {
     container.append(创建小时选择块("你的他几点之后不再主动发消息（24 时制）", "wake_window.end_hour", 解析键路径(当前运行配置, ["wake_window", "end_hour"], 3)));
     container.append(创建文本域块("那些你一用他就响起警报的应用（每行一个）", "sensor.urgent_apps", (解析键路径(当前运行配置, ["sensor", "urgent_apps"], []) || []).join("\n"), "例如：爱发电"));
 
-    const tip = $('<div class="zwb-form-item-full zwb-output-box"></div>');
+    const tip = $('<div class="zwb-form-item-full zwb-output-box" style="font-size:12px; color:#888;"></div>');
     tip.text("跨夜时间段也支持，例如开始填 23、结束填 9，表示晚上 11 点到第二天早上 9 点都允许主动联系。开始和结束填成同一个数字时，表示全天都允许。");
     container.append(tip);
 
-    const buttons = $('<div class="zwb-form-item-full zwb-panel-actions"><button id="zwb_save_runtime_config_btn" class="menu_button" type="button">保存运行策略</button><button id="zwb_reload_runtime_config_btn" class="menu_button" type="button">重新读取</button></div>');
+    const buttons = $('<div class="zwb-form-item-full zwb-panel-actions"><button id="zwb_save_runtime_config_btn" class="menu_button" type="button" style="background:#5e5c8a;color:white;">保存运行策略</button><button id="zwb_reload_runtime_config_btn" class="menu_button" type="button">重新读取</button></div>');
     container.append(buttons);
 }
 
@@ -329,18 +328,10 @@ async function 读取世界书名称列表() {
     if (getAll) pushNames(await getAll());
     if (getGlobal) pushNames(await getGlobal());
     if (getChar) {
-        try {
-            pushNames(await getChar("current"));
-        } catch (_error) {
-            pushNames(await getChar());
-        }
+        try { pushNames(await getChar("current")); } catch (_error) { pushNames(await getChar()); }
     }
     if (getChat) {
-        try {
-            pushNames(await getChat("current"));
-        } catch (_error) {
-            pushNames(await getChat());
-        }
+        try { pushNames(await getChat("current")); } catch (_error) { pushNames(await getChat()); }
     }
 
     return Array.from(names);
@@ -365,66 +356,80 @@ async function 刷新MEMORYMarkdown与世界书() {
     $("#zwb_memory_markdown_editor").val(memoryMarkdownResult.data || "");
 
     const names = await 读取世界书名称列表();
-    const select = $("#zwb_worldbook_select");
-    select.empty();
+    const container = $("#zwb_worldbook_names_container");
+    container.empty();
+    
     if (!names.length) {
-        select.append('<option value="">未检测到可用世界书</option>');
-        $("#zwb_worldbook_entries").text("尚未检测到世界书条目接口，或当前没有可用世界书。");
+        container.append('<div style="color:#888; font-size:13px;">未检测到可用世界书</div>');
+        $("#zwb_worldbook_entries").empty();
         return;
     }
 
     names.forEach(name => {
-        select.append(`<option value="${name}">${name}</option>`);
+        const checkboxHtml = `
+            <label style="display: inline-block; margin: 0 12px 8px 0; cursor: pointer; font-size: 13px; color: var(--SmartThemeBodyColor);">
+                <input type="checkbox" class="zwb-wb-name-checkbox" value="${name}" style="vertical-align: middle; margin-right: 4px; cursor: pointer;"> 
+                ${name}
+            </label>
+        `;
+        container.append(checkboxHtml);
     });
 
-    await 刷新世界书条目显示(select.val());
+    $("#zwb_worldbook_entries").empty();
 }
 
-// ========= 修复1：两步走抓取世界书条目 UI =========
-async function 刷新世界书条目显示(worldbookName) {
+async function 刷新多个世界书条目显示(worldbookNames) {
     const container = $("#zwb_worldbook_entries");
     container.empty();
 
-    if (!worldbookName) {
-        container.text("请先选择世界书。");
+    if (!worldbookNames.length) {
+        container.text("请先在上方勾选世界书。");
         return;
     }
 
-    container.append('<div style="font-size:13px; color:#666; margin-bottom:8px;">正在读取世界书条目...</div>');
-    const entries = await 读取世界书条目(worldbookName);
+    container.append('<div style="font-size:13px; color:#888; margin-bottom:8px;">正在读取所选世界书条目...</div>');
+    
+    let allEntries = [];
+    for (const name of worldbookNames) {
+        const entries = await 读取世界书条目(name);
+        // 给每个条目打上来源书的标签
+        entries.forEach(e => e._sourceWB = name); 
+        allEntries = allEntries.concat(entries);
+    }
+    
     container.empty();
 
-    if (!entries.length) {
-        container.text("当前世界书没有可用条目。");
+    if (!allEntries.length) {
+        container.text("所选的世界书中没有可用条目。");
         return;
     }
 
-    // 创建条目复选框列表
-    const checkboxContainer = $('<div class="zwb-wb-checkboxes" style="max-height: 180px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.2); padding: 8px; margin-bottom: 10px; border-radius: 5px;"></div>');
+    const checkboxContainer = $('<div class="zwb-wb-checkboxes" style="max-height: 200px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.2); padding: 8px; margin-bottom: 10px; border-radius: 5px;"></div>');
     
-    entries.forEach((entry, index) => {
-        const title = entry.comment || entry.name || (Array.isArray(entry.key) ? entry.key.join('、') : entry.key) || `无名条目 ${index + 1}`;
-        const safeTitle = title.length > 40 ? title.substring(0, 40) + '...' : title;
+    allEntries.forEach((entry, index) => {
+        const keys = Array.isArray(entry.key) ? entry.key.join('、') : (entry.key || '');
+        const title = entry.comment || entry.name || keys || `无名条目`;
+        const safeTitle = title.length > 30 ? title.substring(0, 30) + '...' : title;
+        
         const checkboxHtml = `
-            <label style="display: block; margin-bottom: 6px; cursor: pointer; font-size: 13px; color: var(--SmartThemeBodyColor);">
-                <input type="checkbox" class="zwb-wb-entry-checkbox" data-index="${index}" style="margin-right: 6px; cursor: pointer;">
-                ${safeTitle}
+            <label style="display: flex; align-items: flex-start; margin-bottom: 8px; cursor: pointer; font-size: 13px; color: var(--SmartThemeBodyColor);">
+                <input type="checkbox" class="zwb-wb-entry-checkbox" data-index="${index}" style="margin-right: 8px; margin-top: 3px; cursor: pointer;">
+                <div>
+                    <span style="color:#7aa2ff; font-weight:bold;">[${entry._sourceWB}]</span> ${safeTitle}
+                    <div style="font-size:11px; color:#aaa; margin-top:2px;">关键词: ${keys || '无'}</div>
+                </div>
             </label>
         `;
         checkboxContainer.append(checkboxHtml);
     });
 
-    // 选中的内容预览区
-    const previewArea = $('<div id="zwb_wb_preview_area" class="text_pole zwb-json-textarea" style="white-space: pre-wrap; font-size: 12px; height: 160px; overflow-y: auto; margin-bottom: 10px; display: none;" readonly></div>');
-    
-    // 追加按钮
-    const actionBtn = $('<button id="zwb_append_selected_wb_btn" class="menu_button" type="button" style="display: none;">👇 追加选中的设定到下方 MEMORY.md 👇</button>');
+    const previewArea = $('<textarea id="zwb_wb_preview_area" class="text_pole zwb-json-textarea" style="height: 160px; margin-bottom: 10px; display: none;" readonly></textarea>');
+    const actionBtn = $('<button id="zwb_append_selected_wb_btn" class="menu_button full-width" type="button" style="display: none; background:#2e8b57; color:white;">👇 追加选中的设定到 MEMORY.md 👇</button>');
 
     container.append(checkboxContainer);
     container.append(previewArea);
     container.append(actionBtn);
 
-    // 监听复选框变化
     container.on('change', '.zwb-wb-entry-checkbox', function() {
         const selectedIndexes = [];
         container.find('.zwb-wb-entry-checkbox:checked').each(function() {
@@ -434,10 +439,10 @@ async function 刷新世界书条目显示(worldbookName) {
         if (selectedIndexes.length > 0) {
             let previewText = "";
             selectedIndexes.forEach(idx => {
-                previewText += 格式化世界书条目(entries[idx]) + "\n\n";
+                previewText += 格式化世界书条目(allEntries[idx]) + "\n\n";
             });
-            previewArea.text(previewText.trim()).show();
-            actionBtn.show().data('selected-entries', selectedIndexes.map(idx => entries[idx]));
+            previewArea.val(previewText.trim()).show();
+            actionBtn.show().data('selected-entries', selectedIndexes.map(idx => allEntries[idx]));
         } else {
             previewArea.hide();
             actionBtn.hide();
@@ -539,9 +544,6 @@ function 生成User候选文本(userInfo) {
     return `# USER.md - 自动生成候选\n\n- **Name:** ${userInfo.name || "User"}\n\n---\n\n## 你的基础设定\n${userInfo.description || ""}\n\n## 他的参考备注\n这里可以补充你的习惯、边界、称呼偏好、作息、雷点等。`.trim();
 }
 
-
-// ========= 修复2：人类友好的历史记录格式化与解析 =========
-
 function 格式化单条消息(item, index) {
     let role = "NPC";
     if (item.is_system) role = "System";
@@ -577,7 +579,6 @@ function 解析友好Jsonl文本(text) {
     }
 
     const messagesText = source.includes('#MESSAGES') ? source.split('#MESSAGES')[1] : source;
-    // 按块分割，兼顾不同环境换行符
     const blocks = messagesText.split(/\n?(?:^# \d+\r?\n)/m).filter(b => b.trim());
     
     const items = blocks.map(block => {
@@ -606,7 +607,7 @@ function 解析友好Jsonl文本(text) {
             
             mesLines = lines.slice(3);
         } else {
-            mesLines = lines; // 格式破损时的备用兼容
+            mesLines = lines; 
         }
 
         return {
@@ -644,7 +645,6 @@ async function 刷新总览信息() {
     $("#zwb_mode_badge").text(result.mode_label || "未配置");
     $("#zwb_active_memory").text(result.active_memory || "未设置");
     $("#zwb_overview_status").text(result.summary || "暂无状态信息");
-    $("#zwb_accounts_notice").text(result.accounts_notice || "accounts/ 将被视为最高优先级备份对象。");
 }
 
 async function 读取基础配置() {
@@ -666,8 +666,8 @@ async function 读取角色相关内容() {
         请求接口("/workspace/read", { body: { file_key: "user" } }),
     ]);
 
-    $("#zwb_character_current").text(`【当前 IDENTITY.md（稳定角色身份设定）】\n${identityResult.data || ""}\n\n【当前 SOUL.md（灵魂补充设定，动态视觉反馈段会保留）】\n${soulResult.data || ""}`);
-    $("#zwb_user_current").text(userResult.data || "");
+    $("#zwb_character_current").val(`【当前 IDENTITY.md】\n${identityResult.data || ""}\n\n【当前 SOUL.md】\n${soulResult.data || ""}`);
+    $("#zwb_user_current").val(userResult.data || "");
 
     const role = 提取当前角色信息();
     const userInfo = 提取当前User信息();
@@ -686,10 +686,12 @@ function 渲染记忆列表(data) {
     if (!fullLogs.length) {
         memoryContainer.text("暂无 full log 文件。");
     } else {
+        const actions = $('<div class="zwb-panel-actions"></div>');
         fullLogs.forEach(item => {
-            const button = $(`<button class="menu_button zwb-memory-open-btn" type="button" data-file-name="${item.name}">${item.is_active ? '【当前】' : '【备用】'} ${item.name}</button>`);
-            memoryContainer.append(button);
+            const button = $(`<button class="menu_button zwb-memory-open-btn" type="button" data-file-name="${item.name}">${item.is_active ? '★ ' : ''}${item.name}</button>`);
+            actions.append(button);
         });
+        memoryContainer.append(actions);
     }
 
     const summaryContainer = $("#zwb_summary_list");
@@ -698,10 +700,12 @@ function 渲染记忆列表(data) {
     if (!summaryLogs.length) {
         summaryContainer.text("暂无 Summary 文件。");
     } else {
+        const actions = $('<div class="zwb-panel-actions"></div>');
         summaryLogs.forEach(item => {
             const button = $(`<button class="menu_button zwb-summary-open-btn" type="button" data-file-name="${item.name}">${item.name}</button>`);
-            summaryContainer.append(button);
+            actions.append(button);
         });
+        summaryContainer.append(actions);
     }
 }
 
@@ -736,6 +740,14 @@ function 获取当前聊天消息列表() {
     }
 }
 
+function 刷新酒馆聊天显示() {
+    const editor = $("#zwb_st_chat_preview_editor");
+    if (!editor.length) return;
+    const messages = 获取当前聊天消息列表();
+    const formatted = 友好化酒馆消息列表(messages);
+    editor.val(formatted || "当前酒馆聊天记录为空...");
+}
+
 function 酒馆消息转微信记忆项(messages) {
     return (messages || []).map(message => ({
         name: message.name || (message.is_user ? "用户" : "角色"),
@@ -762,16 +774,16 @@ function 渲染传感映射编辑器() {
 
     const entries = Object.entries(当前传感映射 || {});
     if (!entries.length) {
-        container.append('<div class="zwb-sensor-row"><input class="text_pole" data-sensor-key="name" type="text" placeholder="APP 名称" /><textarea class="text_pole zwb-sensor-desc" data-sensor-key="prompt" placeholder="附加解释提示词"></textarea></div>');
+        container.append('<div class="zwb-sensor-row" style="margin-bottom:8px; display:flex; gap:4px;"><input class="text_pole" data-sensor-key="name" type="text" placeholder="APP 名称" style="flex:1" /><textarea class="text_pole zwb-sensor-desc" data-sensor-key="prompt" placeholder="附加解释" style="flex:3; height:40px;"></textarea></div>');
         return;
     }
 
     entries.forEach(([appName, prompt]) => {
         const row = $(
-            `<div class="zwb-sensor-row">
-                <input class="text_pole" data-sensor-key="name" type="text" placeholder="APP 名称" />
-                <textarea class="text_pole zwb-sensor-desc" data-sensor-key="prompt" placeholder="附加解释提示词"></textarea>
-                <button class="menu_button zwb-delete-sensor-row-btn" type="button">删除</button>
+            `<div class="zwb-sensor-row" style="margin-bottom:8px; display:flex; gap:4px;">
+                <input class="text_pole" data-sensor-key="name" type="text" placeholder="APP 名称" style="flex:1" />
+                <textarea class="text_pole zwb-sensor-desc" data-sensor-key="prompt" placeholder="附加解释" style="flex:3; height:40px;"></textarea>
+                <button class="menu_button zwb-delete-sensor-row-btn" type="button" style="margin:0;">删除</button>
             </div>`
         );
         row.find('[data-sensor-key="name"]').val(appName);
@@ -814,43 +826,7 @@ async function 刷新备份列表() {
     });
 }
 
-// ========= 修复3：注入并刷新“酒馆历史与微信历史”双向独立 UI =========
-function 渲染双向历史UI() {
-    // 如果还没注入酒馆聊天编辑器，就注入在微信编辑器下面
-    if ($("#zwb_st_chat_preview_editor").length === 0) {
-        const wechatEditorContainer = $("#zwb_memory_preview_editor").closest(".zwb-form-item-full");
-        if (wechatEditorContainer.length) {
-            // 给原来的编辑器加上提示标识
-            wechatEditorContainer.find("label").text("微信 Bot 历史记忆（可在此修改后保存或导入酒馆）");
-            
-            // 注入新的酒馆记录文本框
-            const stChatHtml = `
-            <div class="zwb-form-item-full" style="margin-top: 25px; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 20px;">
-                <label style="color: #4CAF50; font-weight: bold; font-size: 14px;">酒馆当前聊天历史（可在下方编辑修剪后导入上面的微信记忆）</label>
-                <textarea id="zwb_st_chat_preview_editor" class="text_pole zwb-json-textarea" style="height: 300px; margin-bottom: 10px;" placeholder="酒馆聊天记录将在此显示..."></textarea>
-                <div class="zwb-panel-actions">
-                    <button id="zwb_refresh_st_chat_btn" class="menu_button" type="button">↻ 刷新酒馆历史</button>
-                    <button id="zwb_import_st_to_wechat_btn" class="menu_button" type="button" style="background-color: #2e8b57; color: white;">↑ 将修剪后的酒馆历史导入左侧选中的微信文件 ↑</button>
-                </div>
-            </div>`;
-            wechatEditorContainer.after(stChatHtml);
-        }
-    }
-    
-    // 把微信导入酒馆的按钮换个高亮的词
-    $("#zwb_import_wechat_memory_to_st_btn").text("↓ 将上方微信记忆导入当前酒馆聊天 ↓").css({"background-color": "#5e5c8a", "color": "white"});
-}
-
-function 刷新酒馆聊天显示() {
-    if ($("#zwb_st_chat_preview_editor").length === 0) return;
-    const messages = 获取当前聊天消息列表();
-    const formatted = 友好化酒馆消息列表(messages);
-    $("#zwb_st_chat_preview_editor").val(formatted || "当前酒馆聊天记录为空...");
-}
-
-
 async function 加载全部核心数据() {
-    渲染双向历史UI();
     await 检测连接状态();
     await 刷新总览信息();
     await 读取基础配置();
@@ -913,7 +889,6 @@ function 绑定模态框事件() {
     $("body").on("click", "#zwb_modal_container", function (event) {
         if (event.target === this) 隐藏桥接中心模态框();
     });
-
 
     $("body").on("click", ".zwb-tab-btn", function () {
         const tabId = $(this).data("tab");
@@ -1015,12 +990,12 @@ function 绑定按钮事件() {
             const draftText = $("#zwb_character_preview_editor").val();
             let content = 注入Name行(draftText, name);
             if (fileKey === "soul") {
-                const currentSoul = String($("#zwb_character_current").text().split("【当前 SOUL.md（灵魂补充设定，动态视觉反馈段会保留）】\n")[1] || "");
+                const currentSoul = String($("#zwb_character_current").val().split("【当前 SOUL.md】\n")[1] || "");
                 content = 合并Soul草稿与现有尾段(draftText, currentSoul, name);
             }
             await 请求接口("/workspace/save", { body: { file_key: fileKey, data: content } });
             await 读取角色相关内容();
-            toastr.success(`已写入 ${fileKey === 'identity' ? 'IDENTITY.md（稳定角色身份设定）' : 'SOUL.md（已保留动态视觉反馈段）'}`);
+            toastr.success(`已写入 ${fileKey === 'identity' ? 'IDENTITY.md' : 'SOUL.md'}`);
         } catch (error) {
             toastr.error(`写入角色文件失败：${error.message}`);
         }
@@ -1044,9 +1019,6 @@ function 绑定按钮事件() {
             toastr.error(`写入 USER.md 失败：${error.message}`);
         }
     });
-
-    
-    // ======== 互导按钮逻辑修改：使用文本框内容而不是直接强制抓取 ========
     
     $("body").on("click", "#zwb_refresh_st_chat_btn", () => {
         刷新酒馆聊天显示();
@@ -1057,13 +1029,11 @@ function 绑定按钮事件() {
         try {
             const fileName = String($("#zwb_memory_file_input").val() || "").trim();
             if (!fileName) {
-                return toastr.warning("请先在左侧选择一个微信 Memory 文件，再执行导入");
+                return toastr.warning("请先在上方选中一个微信文件");
             }
-            
-            // 解析用户手动修剪过的下方的酒馆历史
             const parsed = 解析友好Jsonl文本($("#zwb_st_chat_preview_editor").val());
             if (!parsed.items || !parsed.items.length) {
-                return toastr.warning("没有任何能识别的消息，请检查文本框内容格式。");
+                return toastr.warning("下区没有任何能识别的消息，请检查格式。");
             }
 
             const metadata = 当前记忆文件数据?.metadata || {};
@@ -1076,32 +1046,28 @@ function 绑定按钮事件() {
             await 读取记忆列表();
             toastr.success(`已成功把修剪过的 ${parsed.items.length} 条酒馆消息写入微信：${fileName}`);
         } catch (error) {
-            toastr.error(`导入到微信 Memory 失败：${error.message}`);
+            toastr.error(`写入微信 Memory 失败：${error.message}`);
         }
     });
 
     $("body").on("click", "#zwb_import_wechat_memory_to_st_btn", async () => {
         try {
             const creator = 获取稳定接口("createChatMessages");
-            if (!creator) {
-                return toastr.error("当前酒馆环境没有可用的聊天写入接口");
-            }
+            if (!creator) return toastr.error("当前环境无法写入聊天");
             
-            // 解析上方微信记录输入框中的内容
             const parsed = 解析友好Jsonl文本($("#zwb_memory_preview_editor").val());
             if (!parsed.items || !parsed.items.length) {
-                return toastr.warning("上方微信记忆输入框中没有可识别的消息");
+                return toastr.warning("上方输入框中没有可识别的微信消息");
             }
             
             const converted = 微信记忆转酒馆消息(parsed.items);
             await creator(converted, { insert_before: "end", refresh: "all" });
             刷新酒馆聊天显示();
-            toastr.success(`成功将上方编辑过的 ${converted.length} 条微信消息追加到酒馆聊天末尾！`);
+            toastr.success(`成功追加 ${converted.length} 条微信消息到酒馆！`);
         } catch (error) {
-            toastr.error(`导入到酒馆聊天失败：${error.message}`);
+            toastr.error(`追加到酒馆失败：${error.message}`);
         }
     });
-
 
     $("body").on("click", ".zwb-memory-open-btn", async function () {
         try {
@@ -1132,24 +1098,23 @@ function 绑定按钮事件() {
     $("body").on("click", "#zwb_activate_memory_btn", async () => {
         try {
             const fileName = String($("#zwb_memory_file_input").val() || "").trim();
-            if (!fileName) {
-                return toastr.warning("请先选择一个 Memory 文件");
-            }
+            if (!fileName) return toastr.warning("请先选择一个文件");
             await 请求接口("/memory/activate", { body: { file_name: fileName } });
             await 读取记忆列表();
             await 刷新总览信息();
             toastr.success("当前启用的 Memory 文件已更新");
         } catch (error) {
-            toastr.error(`设置当前启用文件失败：${error.message}`);
+            toastr.error(`设置启用文件失败：${error.message}`);
         }
     });
 
-    $("body").on("change", "#zwb_worldbook_select", async function () {
-        try {
-            await 刷新世界书条目显示($(this).val());
-        } catch (error) {
-            toastr.error(`读取世界书条目失败：${error.message}`);
-        }
+    // 监听世界书多选框
+    $("body").on("change", ".zwb-wb-name-checkbox", async function () {
+        const selectedNames = [];
+        $(".zwb-wb-name-checkbox:checked").each(function() {
+            selectedNames.push($(this).val());
+        });
+        await 刷新多个世界书条目显示(selectedNames);
     });
 
     $("body").on("click", "#zwb_append_selected_wb_btn", function () {
@@ -1161,23 +1126,21 @@ function 绑定按钮事件() {
             const newTexts = selectedEntries.map(entry => 格式化世界书条目(entry));
             
             $("#zwb_memory_markdown_editor").val([currentText, ...newTexts].filter(Boolean).join("\n\n"));
-            toastr.success(`已将 ${selectedEntries.length} 个条目追加到 MEMORY.md 编辑区，记得点击保存！`);
+            toastr.success(`已追加 ${selectedEntries.length} 个条目到上方 MEMORY.md，记得点击保存！`);
         } catch (error) {
-            toastr.error(`追加世界书条目失败：${error.message}`);
+            toastr.error(`追加失败：${error.message}`);
         }
     });
 
     $("body").on("click", "#zwb_save_memory_btn", async () => {
         try {
             const fileName = String($("#zwb_memory_file_input").val() || "").trim();
-            if (!fileName) {
-                return toastr.warning("请先选择要保存的 Memory 文件");
-            }
+            if (!fileName) return toastr.warning("请先选择要保存的 Memory 文件");
             const parsed = 解析友好Jsonl文本($("#zwb_memory_preview_editor").val());
             await 请求接口("/memory/save", { body: { file_name: fileName, metadata: parsed.metadata, items: parsed.items } });
-            toastr.success("记忆文件已保存");
+            toastr.success("上方记忆修改已保存");
         } catch (error) {
-            toastr.error(`保存记忆文件失败：${error.message}`);
+            toastr.error(`保存失败：${error.message}`);
         }
     });
 
@@ -1192,7 +1155,7 @@ function 绑定按钮事件() {
 
     $("body").on("click", "#zwb_add_sensor_row_btn", () => {
         const container = $("#zwb_sensor_map_editor");
-        container.append('<div class="zwb-sensor-row"><input class="text_pole" data-sensor-key="name" type="text" placeholder="APP 名称" /><textarea class="text_pole zwb-sensor-desc" data-sensor-key="prompt" placeholder="附加解释提示词"></textarea><button class="menu_button zwb-delete-sensor-row-btn" type="button">删除</button></div>');
+        container.append('<div class="zwb-sensor-row" style="margin-bottom:8px; display:flex; gap:4px;"><input class="text_pole" data-sensor-key="name" type="text" placeholder="APP 名称" style="flex:1" /><textarea class="text_pole zwb-sensor-desc" data-sensor-key="prompt" placeholder="附加解释提示词" style="flex:3; height:40px;"></textarea><button class="menu_button zwb-delete-sensor-row-btn" type="button" style="margin:0;">删除</button></div>');
     });
 
     $("body").on("click", ".zwb-delete-sensor-row-btn", function () {
@@ -1205,16 +1168,16 @@ function 绑定按钮事件() {
             await 请求接口("/sensor/map/save", { body: { data: 当前传感映射 } });
             toastr.success("sensor_map.json 已保存");
         } catch (error) {
-            toastr.error(`保存 sensor_map.json 失败：${error.message}`);
+            toastr.error(`保存失败：${error.message}`);
         }
     });
 
     $("body").on("click", "#zwb_reload_sensor_map_btn", async () => {
         try {
             await 读取传感映射();
-            toastr.success("sensor_map.json 已重新读取");
+            toastr.success("已重新读取");
         } catch (error) {
-            toastr.error(`读取 sensor_map.json 失败：${error.message}`);
+            toastr.error(`读取失败：${error.message}`);
         }
     });
 
@@ -1233,16 +1196,14 @@ function 绑定按钮事件() {
             await 刷新备份列表();
             toastr.success("备份列表已刷新");
         } catch (error) {
-            toastr.error(`读取备份列表失败：${error.message}`);
+            toastr.error(`读取失败：${error.message}`);
         }
     });
 
     $("body").on("click", "#zwb_restore_backup_btn", async () => {
         try {
             const backupName = String($("#zwb_backup_restore_select").val() || "").trim();
-            if (!backupName) {
-                return toastr.warning("请先选择要恢复的备份");
-            }
+            if (!backupName) return toastr.warning("请先选择要恢复的备份");
             const result = await 请求接口("/backup/restore", { body: { backup_name: backupName } });
             toastr.success(result.message || "备份已恢复");
             await 刷新备份列表();
