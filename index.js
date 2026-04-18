@@ -16,10 +16,6 @@ let 当前记忆列表 = null;
 let 当前记忆文件数据 = null;
 let 当前传感映射 = {};
 let 当前备份列表 = [];
-let 设置事件已绑定 = false;
-let 模态框事件已绑定 = false;
-let 按钮事件已绑定 = false;
-let 备份按钮事件已绑定 = false;
 
 function 获取设置() {
     extension_settings[extensionName] = extension_settings[extensionName] || {};
@@ -76,29 +72,20 @@ function 渲染设置到界面() {
 }
 
 function 绑定设置事件() {
-    if (设置事件已绑定) return;
-    设置事件已绑定 = true;
+    $("#zwb_local_base_dir").on("input", function () {
+        获取设置().local_base_dir = String($(this).val() || "").trim();
+        保存设置();
+    });
 
-    $(document)
-        .off("input.zwbSettings", "#zwb_local_base_dir")
-        .on("input.zwbSettings", "#zwb_local_base_dir", function () {
-            获取设置().local_base_dir = String($(this).val() || "").trim();
-            保存设置();
-        });
+    $("#zwb_enable_http_mode").on("input", function () {
+        获取设置().enable_http_mode = Boolean($(this).prop("checked"));
+        保存设置();
+    });
 
-    $(document)
-        .off("input.zwbSettings", "#zwb_enable_http_mode")
-        .on("input.zwbSettings", "#zwb_enable_http_mode", function () {
-            获取设置().enable_http_mode = Boolean($(this).prop("checked"));
-            保存设置();
-        });
-
-    $(document)
-        .off("input.zwbSettings", "#zwb_remote_base_url")
-        .on("input.zwbSettings", "#zwb_remote_base_url", function () {
-            获取设置().remote_base_url = String($(this).val() || "").trim();
-            保存设置();
-        });
+    $("#zwb_remote_base_url").on("input", function () {
+        获取设置().remote_base_url = String($(this).val() || "").trim();
+        保存设置();
+    });
 }
 
 function 解析键路径(obj, segments, defaultValue = undefined) {
@@ -197,10 +184,10 @@ function 渲染主配置表单() {
         container.append(创建基础输入块(label, key, value));
     }
 
-    const ttsBlock = $('<div class="zwb-form-item-full zwb-tts-block"></div>');
-    ttsBlock.append('<label>语音轮询节点（最多 10 个）</label>');
+    const ttsBlock = $('<div class="zwb-form-item-full zwb-block"></div>');
+    ttsBlock.append('<h3>语音轮询节点（最多 10 个）</h3>');
     ttsBlock.append('<div id="zwb_tts_credentials_editor" class="zwb-tts-editor"></div>');
-    ttsBlock.append('<div class="zwb-panel-actions"><button id="zwb_add_tts_cred_btn" class="menu_button" type="button">新增语音节点</button><button id="zwb_save_main_config_btn" class="menu_button" type="button" style="background:#5e5c8a;color:white;">保存基础配置</button><button id="zwb_reload_main_config_btn" class="menu_button" type="button">重新读取</button></div>');
+    ttsBlock.append('<div class="zwb-panel-actions"><button id="zwb_add_tts_cred_btn" class="menu_button" type="button">新增语音节点</button><button id="zwb_save_main_config_btn" class="menu_button" type="button">保存基础配置</button><button id="zwb_reload_main_config_btn" class="menu_button" type="button">重新读取</button></div>');
     container.append(ttsBlock);
 
     渲染语音节点编辑器();
@@ -213,13 +200,13 @@ function 渲染语音节点编辑器() {
 
     const list = Array.isArray(当前主配置?.tts?.credentials) ? 当前主配置.tts.credentials : [];
     if (!list.length) {
-        editor.append('<div class="zwb-list-box">当前尚未配置语音节点。</div>');
+        editor.append('<div class="zwb-output-box" style="min-height:auto;">当前尚未配置语音节点。</div>');
         return;
     }
 
     list.forEach((item, index) => {
         const row = $(
-            `<div class="zwb-tts-row" style="margin-bottom:8px; display:flex; gap:4px;">
+            `<div class="zwb-sensor-row" style="margin-bottom:8px; display:flex; gap:4px;">
                 <input class="text_pole" type="text" data-tts-index="${index}" data-tts-key="appid" placeholder="appid" style="flex:1" />
                 <input class="text_pole" type="text" data-tts-index="${index}" data-tts-key="token" placeholder="token" style="flex:1" />
                 <input class="text_pole" type="text" data-tts-index="${index}" data-tts-key="voiceId" placeholder="voiceId" style="flex:1" />
@@ -269,11 +256,7 @@ function 渲染运行配置表单() {
     container.append(创建小时选择块("你的他几点之后不再主动发消息（24 时制）", "wake_window.end_hour", 解析键路径(当前运行配置, ["wake_window", "end_hour"], 3)));
     container.append(创建文本域块("那些你一用他就响起警报的应用（每行一个）", "sensor.urgent_apps", (解析键路径(当前运行配置, ["sensor", "urgent_apps"], []) || []).join("\n"), "例如：爱发电"));
 
-    const tip = $('<div class="zwb-form-item-full zwb-output-box" style="font-size:12px; color:#888;"></div>');
-    tip.text("跨夜时间段也支持，例如开始填 23、结束填 9，表示晚上 11 点到第二天早上 9 点都允许主动联系。开始和结束填成同一个数字时，表示全天都允许。");
-    container.append(tip);
-
-    const buttons = $('<div class="zwb-form-item-full zwb-panel-actions"><button id="zwb_save_runtime_config_btn" class="menu_button" type="button" style="background:#5e5c8a;color:white;">保存运行策略</button><button id="zwb_reload_runtime_config_btn" class="menu_button" type="button">重新读取</button></div>');
+    const buttons = $('<div class="zwb-form-item-full zwb-panel-actions"><button id="zwb_save_runtime_config_btn" class="menu_button" type="button">保存运行策略</button><button id="zwb_reload_runtime_config_btn" class="menu_button" type="button">重新读取</button></div>');
     container.append(buttons);
 }
 
@@ -380,8 +363,8 @@ async function 刷新MEMORYMarkdown与世界书() {
 
     names.forEach(name => {
         const checkboxHtml = `
-            <label style="display: inline-block; margin: 0 12px 8px 0; cursor: pointer; font-size: 13px; color: var(--SmartThemeBodyColor);">
-                <input type="checkbox" class="zwb-wb-name-checkbox" value="${name}" style="vertical-align: middle; margin-right: 4px; cursor: pointer;"> 
+            <label style="display: inline-block; margin: 0 12px 8px 0; cursor: pointer; font-size: 13px;">
+                <input type="checkbox" class="zwb-wb-name-checkbox" value="${name}" style="vertical-align: middle; margin-right: 4px; cursor: pointer; width:auto;"> 
                 ${name}
             </label>
         `;
@@ -416,7 +399,7 @@ async function 刷新多个世界书条目显示(worldbookNames) {
         return;
     }
 
-    const checkboxContainer = $('<div class="zwb-wb-checkboxes" style="max-height: 200px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.2); padding: 8px; margin-bottom: 10px; border-radius: 5px;"></div>');
+    const checkboxContainer = $('<div class="zwb-wb-checkboxes" style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 8px; margin-bottom: 10px; border-radius: 5px;"></div>');
     
     allEntries.forEach((entry, index) => {
         const keys = Array.isArray(entry.key) ? entry.key.join('、') : (entry.key || '');
@@ -424,8 +407,8 @@ async function 刷新多个世界书条目显示(worldbookNames) {
         const safeTitle = title.length > 30 ? title.substring(0, 30) + '...' : title;
         
         const checkboxHtml = `
-            <label style="display: flex; align-items: flex-start; margin-bottom: 8px; cursor: pointer; font-size: 13px; color: var(--SmartThemeBodyColor);">
-                <input type="checkbox" class="zwb-wb-entry-checkbox" data-index="${index}" style="margin-right: 8px; margin-top: 3px; cursor: pointer;">
+            <label style="display: flex; align-items: flex-start; margin-bottom: 8px; cursor: pointer; font-size: 13px;">
+                <input type="checkbox" class="zwb-wb-entry-checkbox" data-index="${index}" style="margin-right: 8px; margin-top: 3px; cursor: pointer; width:auto;">
                 <div>
                     <span style="color:#7aa2ff; font-weight:bold;">[${entry._sourceWB}]</span> ${safeTitle}
                     <div style="font-size:11px; color:#aaa; margin-top:2px;">关键词: ${keys || '无'}</div>
@@ -436,7 +419,7 @@ async function 刷新多个世界书条目显示(worldbookNames) {
     });
 
     const previewArea = $('<textarea id="zwb_wb_preview_area" class="text_pole zwb-json-textarea" style="height: 160px; margin-bottom: 10px; display: none;" readonly></textarea>');
-    const actionBtn = $('<button id="zwb_append_selected_wb_btn" class="menu_button full-width" type="button" style="display: none; background:#2e8b57; color:white;">👇 追加选中的设定到 MEMORY.md 👇</button>');
+    const actionBtn = $('<button id="zwb_append_selected_wb_btn" class="menu_button full-width" type="button" style="display: none;">👇 追加选中的设定到 MEMORY.md 👇</button>');
 
     container.append(checkboxContainer);
     container.append(previewArea);
@@ -637,10 +620,10 @@ function 解析友好Jsonl文本(text) {
 
 async function 检测连接状态() {
     const statusElement = $("#zwb_status_hint");
-    statusElement.text("当前状态：正在检测...");
+    if (statusElement.length) statusElement.text("当前状态：正在检测...");
     const result = await 请求接口("/health");
     const text = `当前状态：${result.message || "连接正常"}`;
-    statusElement.text(text);
+    if (statusElement.length) statusElement.text(text);
     $("#zwb_modal_runtime").text(text);
 }
 
@@ -884,50 +867,27 @@ function 当前模态框骨架有效() {
     return modal.length > 0 && modal.find(".zwb-modal-wrapper").length > 0 && modal.find(".zwb-tab-content").length > 0;
 }
 
-async function 确保界面骨架已注入({ 重新加载面板 = false, 重新加载模态框 = false } = {}) {
-    const 需要注入面板 = 重新加载面板 || !$("#zwb_open_modal_btn").length;
-    if (需要注入面板) {
-        const panelHtml = await $.get(`${extensionFolderPath}/templates/panel.html`);
-        if (!$("#zwb_open_modal_btn").length) {
-            $("#extensions_settings").append(panelHtml);
-        }
-    }
-
-    const 需要注入模态框 = 重新加载模态框 || !当前模态框骨架有效();
-    if (需要注入模态框) {
-        const modalHtml = await $.get(`${extensionFolderPath}/templates/modal.html`);
-        if (!模态框模板有效(modalHtml)) {
-            throw new Error("templates/modal.html 不是有效的桥接中心 HTML 模板");
-        }
-        清理已注入界面();
-        $("body").append(modalHtml);
-    }
-
+// 极其暴力的弹出防打断逻辑，直接使用 jQuery 强控 display
+function 显示桥接中心模态框() {
     if (!当前模态框骨架有效()) {
-        throw new Error("桥接中心模板注入后未生成有效面板骨架");
-    }
-}
-
-async function 显示桥接中心模态框() {
-    try {
-        await 确保界面骨架已注入({ 重新加载模态框: !当前模态框骨架有效() });
-    } catch (error) {
-        toastr.error(`桥接中心模板未正确加载：${error.message}`);
+        toastr.error("桥接中心模板未正确加载，请刷新扩展后重试");
         return false;
     }
-
     $("html, body").addClass("zwb-modal-open");
+    
+    // 直接用 jQuery 去除所有行内隐藏，强制设置 flex 并淡入
     $("#zwb_modal_container")
-        .addClass("is-visible")
-        .css({ display: "flex", visibility: "visible", opacity: "1", pointerEvents: "auto" });
+        .css("display", "flex")
+        .hide()
+        .fadeIn(200);
+        
     return true;
 }
 
 function 隐藏桥接中心模态框() {
-    $("#zwb_modal_container")
-        .removeClass("is-visible")
-        .css({ display: "", visibility: "", opacity: "", pointerEvents: "" });
-    $("html, body").removeClass("zwb-modal-open");
+    $("#zwb_modal_container").fadeOut(200, () => {
+        $("html, body").removeClass("zwb-modal-open");
+    });
 }
 
 function 清理已注入界面() {
@@ -935,9 +895,6 @@ function 清理已注入界面() {
 }
 
 function 绑定备份按钮事件() {
-    if (备份按钮事件已绑定) return;
-    备份按钮事件已绑定 = true;
-
     $("body").on("click", "#zwb_backup_now_btn", async () => {
         try {
             const result = await 请求接口("/backup/create");
@@ -959,20 +916,17 @@ function 绑定备份按钮事件() {
 }
 
 function 绑定模态框事件() {
-    if (模态框事件已绑定) return;
-    模态框事件已绑定 = true;
-
     $("body").on("click", "#zwb_open_modal_btn", async (event) => {
         event.preventDefault();
         event.stopPropagation();
-
-        if (!await 显示桥接中心模态框()) {
+        
+        if (!显示桥接中心模态框()) {
             return;
         }
 
         try {
             await 加载全部核心数据();
-            toastr.success("桥接中心加载完毕（即使部分失败界面也可使用）");
+            toastr.success("桥接中心加载完毕");
         } catch (error) {
             toastr.error(`加载异常：${error.message}`);
         }
@@ -993,9 +947,6 @@ function 绑定模态框事件() {
 }
 
 function 绑定按钮事件() {
-    if (按钮事件已绑定) return;
-    按钮事件已绑定 = true;
-
     $("body").on("click", "#zwb_ping_btn", async (event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -1291,18 +1242,29 @@ function 绑定按钮事件() {
 }
 
 async function 初始化界面() {
-    await 确保界面骨架已注入({ 重新加载面板: true, 重新加载模态框: true });
+    const panelHtml = await $.get(`${extensionFolderPath}/templates/panel.html`);
+    const modalHtml = await $.get(`${extensionFolderPath}/templates/modal.html`);
 
+    if (!模态框模板有效(modalHtml)) {
+        throw new Error("templates/modal.html 不是有效的桥接中心 HTML 模板");
+    }
+
+    if (!$("#zwb_open_modal_btn").length) {
+        $("#extensions_settings").append(panelHtml);
+    }
+
+    清理已注入界面();
+    $("body").append(modalHtml);
+
+    if (!当前模态框骨架有效()) {
+        throw new Error("桥接中心模板注入后未生成有效面板骨架");
+    }
+
+    渲染设置到界面();
     绑定设置事件();
     绑定模态框事件();
     绑定按钮事件();
     绑定备份按钮事件();
-
-    try {
-        渲染设置到界面();
-    } catch (error) {
-        console.warn("桥接中心设置渲染失败，但打开入口仍可继续使用:", error);
-    }
 }
 
 jQuery(async () => {
