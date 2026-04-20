@@ -163,6 +163,88 @@ function 毫秒转秒输入值(value, fallbackSeconds) {
     }
     return fallbackSeconds;
 }
+// === 生图高阶控制区字典 ===
+const igModelDict = {
+    api: [
+        { value: "gemini-3-pro-image-preview", text: "Gemini 3 Pro (大香蕉)" },
+        { value: "gemini-3.1-flash-image-preview", text: "Gemini 3.1 Flash (小香蕉2)" }
+    ],
+    bridge: [
+        { value: "gemini-2.5-flash", text: "Gemini 2.5 Flash (AI Studio 专用)" }
+    ],
+    luma: [
+        { value: "nano-banana-pro-3x4", text: "Gemini 3 Pro 竖屏 (适配微信)" },
+        { value: "nano-banana-pro", text: "Gemini 3 Pro 默认" },
+        { value: "nano-banana-pro-9x16", text: "Gemini 3 Pro 9:16" },
+        { value: "nano-banana-pro-1x1", text: "Gemini 3 Pro 正方形 (1:1)" }
+    ]
+};
+
+// === 生成配置 UI 块 ===
+function 创建生图高阶控制区(主配置) {
+    const mode = 解析键路径(主配置, ["image_generation", "mode"], "bridge");
+    const model = 解析键路径(主配置, ["image_generation", "model_name"], "");
+    const url = 解析键路径(主配置, ["image_generation", "api_base_url"], "");
+    const key = 解析键路径(主配置, ["image_generation", "api_key"], "");
+    const ref = 解析键路径(主配置, ["image_generation", "reference_image_path"], "");
+    
+    // 🌟 新增：读取 Luma 的参数
+    const luma_realm = 解析键路径(主配置, ["image_generation", "luma_realm_id"], "");
+    const luma_wos = 解析键路径(主配置, ["image_generation", "luma_wos_session"], "");
+
+    // 使用一个带有 data-key 的 hidden input 偷偷收集单选框的值
+    const wrapper = $(`
+        <div class="zwb-form-item-full" style="background:rgba(0,0,0,0.2); padding:10px; border-radius:6px; margin: 10px 0; border: 1px solid #444;">
+            <div style="margin-bottom: 10px; color: #a855f7; font-weight: bold;">生图配置</div>
+            
+            <input type="hidden" data-key="image_generation.mode" id="zwb_ig_mode_hidden" value="${mode}">
+            
+            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                <label style="cursor:pointer; font-size:13px; color:#ddd; display:flex; align-items:center; gap:5px;">
+                    <input type="radio" name="zwb_ig_mode_radio" value="api" ${mode === 'api' ? 'checked' : ''}> 付费官key/公益站
+                </label>
+                <label style="cursor:pointer; font-size:13px; color:#ddd; display:flex; align-items:center; gap:5px;">
+                    <input type="radio" name="zwb_ig_mode_radio" value="bridge" ${mode === 'bridge' ? 'checked' : ''}> AI Studio (仅能使用2.5F)
+                </label>
+                <label style="cursor:pointer; font-size:13px; color:#ddd; display:flex; align-items:center; gap:5px;">
+                    <input type="radio" name="zwb_ig_mode_radio" value="luma" ${mode === 'luma' ? 'checked' : ''}> 本地LUMA反代
+                </label>
+            </div>
+
+            <div class="zwb-form-item" style="margin-bottom: 10px;">
+                <label>模型</label>
+                <select class="text_pole" data-key="image_generation.model_name" id="zwb_ig_model_select" data-initial="${model}"></select>
+            </div>
+
+            <div class="zwb-form-item" id="zwb_ig_url_block" style="margin-bottom: 10px;">
+                <label id="zwb_ig_url_label">URL 地址</label>
+                <input class="text_pole" type="text" data-key="image_generation.api_base_url" id="zwb_ig_url" value="${url}" placeholder="https://..." />
+            </div>
+
+            <div class="zwb-form-item" id="zwb_ig_key_block" style="margin-bottom: 10px;">
+                <label>API 密钥</label>
+                <input class="text_pole" type="password" data-key="image_generation.api_key" value="${key}" placeholder="sk-..." />
+            </div>
+
+            <div id="zwb_ig_luma_auth" style="margin-bottom: 10px; display: none; background: rgba(168, 85, 247, 0.1); padding: 10px; border-radius: 4px; border: 1px dashed #a855f7;">
+                <div class="zwb-form-item" style="margin-bottom: 5px;">
+                    <label>👤 Luma Realm ID</label>
+                    <input class="text_pole" type="text" data-key="image_generation.luma_realm_id" value="${luma_realm}" placeholder="输入网页上的 Realm ID" />
+                </div>
+                <div class="zwb-form-item" style="margin-bottom: 0;">
+                    <label>🍪 Luma WOS Session</label>
+                    <input class="text_pole" type="password" data-key="image_generation.luma_wos_session" value="${luma_wos}" placeholder="输入 F12 抓取的 Cookie" />
+                </div>
+            </div>
+
+            <div class="zwb-form-item" style="margin-bottom: 0;">
+                <label>自推参考图路径</label>
+                <input class="text_pole" type="text" data-key="image_generation.reference_image_path" value="${ref}" />
+            </div>
+        </div>
+    `);
+    return wrapper;
+}
 
 function 渲染主配置表单() {
     if (!当前主配置) return;
@@ -176,9 +258,6 @@ function 渲染主配置表单() {
         ["图片服务地址", "services.image_server_url", 解析键路径(当前主配置, ["services", "image_server_url"], "")],
         ["语音服务地址", "services.voice_server_url", 解析键路径(当前主配置, ["services", "voice_server_url"], "")],
         ["TTS URL", "tts.url", 解析键路径(当前主配置, ["tts", "url"], "")],
-        ["图片生成 API Key", "image_generation.api_key", 解析键路径(当前主配置, ["image_generation", "api_key"], "")],
-        ["图片生成模型", "image_generation.model_name", 解析键路径(当前主配置, ["image_generation", "model_name"], "")],
-        ["参考图路径", "image_generation.reference_image_path", 解析键路径(当前主配置, ["image_generation", "reference_image_path"], "")],
         ["语音封面图路径", "voice_generation.cover_image_path", 解析键路径(当前主配置, ["voice_generation", "cover_image_path"], "")],
         ["字体路径", "voice_generation.font_path", 解析键路径(当前主配置, ["voice_generation", "font_path"], "")],
         ["智能家居设备 IP", "miio.ip", 解析键路径(当前主配置, ["miio", "ip"], "")],
@@ -188,6 +267,7 @@ function 渲染主配置表单() {
     for (const [label, key, value] of 字段定义) {
         container.append(创建基础输入块(label, key, value));
     }
+    container.append(创建生图高阶控制区(当前主配置));
 
     const ttsBlock = $('<div class="zwb-form-item-full zwb-tts-block"></div>');
     ttsBlock.append('<label>语音轮询节点（最多 10 个）</label>');
@@ -196,6 +276,9 @@ function 渲染主配置表单() {
     container.append(ttsBlock);
 
     渲染语音节点编辑器();
+
+    // 🌟 最后：强制触发一次单选框事件，让界面根据当前模式刷新下拉菜单
+    $('input[name="zwb_ig_mode_radio"]:checked').trigger('change');
 }
 
 function 渲染语音节点编辑器() {
@@ -861,6 +944,38 @@ function 绑定按钮事件() {
         当前主配置.tts.credentials.push({ appid: "", token: "", voiceId: "" });
         渲染语音节点编辑器();
     });
+    // === 生图引擎单选框联动事件 ===
+    $("body").on("change", 'input[name="zwb_ig_mode_radio"]', function () {
+        const mode = $(this).val();
+        
+        // 1. 同步把值写进隐藏框，让你的 data-key 提取逻辑依然能完美提取到！
+        $("#zwb_ig_mode_hidden").val(mode);
+
+        // 2. 动态更新下拉菜单选项
+        const $select = $("#zwb_ig_model_select");
+        const currentModel = $select.data("initial") || $select.val(); // 优先读取初始配置
+        $select.empty();
+        igModelDict[mode].forEach(m => {
+            const isSelected = (m.value === currentModel) ? "selected" : "";
+            $select.append(`<option value="${m.value}" ${isSelected}>${m.text}</option>`);
+        });
+        $select.data("initial", ""); // 清空记录，允许以后自由切换
+
+        // 3. 动态控制 URL、Key 和 Luma 区域的显隐
+        if (mode === 'api') {
+            $("#zwb_ig_url_block, #zwb_ig_key_block").show();
+            $("#zwb_ig_luma_auth").hide();
+            $("#zwb_ig_url_label").text("API URL:");
+        } else if (mode === 'bridge') {
+            $("#zwb_ig_url_block, #zwb_ig_key_block, #zwb_ig_luma_auth").hide();
+        } else if (mode === 'luma') {
+            $("#zwb_ig_url_block, #zwb_ig_luma_auth").show();
+            $("#zwb_ig_key_block").hide(); // Luma 模式不需要常规的 API Key
+            $("#zwb_ig_url_label").text("Luma 反代地址 (端口通常为 8188):");
+            if (!$("#zwb_ig_url").val()) $("#zwb_ig_url").val("http://127.0.0.1:8188/v1/chat/completions");
+        }
+    });
+
 
     $("body").on("click", ".zwb-delete-tts-btn", function () {
         当前主配置.tts.credentials.splice(Number($(this).data("tts-index")), 1);
