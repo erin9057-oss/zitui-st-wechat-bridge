@@ -250,9 +250,9 @@ function 渲染主配置表单() {
     container.empty();
     
     // 🌟 核心UI重组：先把名字和洗盘按钮放在最顶部
-    container.append(创建基础输入块("AI 角色名称", "profile.char_name", 解析键路径(当前主配置, ["profile", "char_name"], "")));
-    container.append(创建基础输入块("你的名称/称呼", "profile.user_name", 解析键路径(当前主配置, ["profile", "user_name"], "")));
-    container.append('<div class="zwb-panel-actions" style="margin: 15px 0 25px 0;"><div id="zwb_migrate_data_btn" class="menu_button" style="background:#a855f7; color:white; width:100%; max-width:none; justify-content:center;">🔥 一键清理预设名字 (转化为占位符)</div></div>');
+    container.append(创建基础输入块("他的名字", "profile.char_name", 解析键路径(当前主配置, ["profile", "char_name"], "")));
+    container.append(创建基础输入块("你的名字", "profile.user_name", 解析键路径(当前主配置, ["profile", "user_name"], "")));
+    container.append('<div class="zwb-panel-actions"><div id="zwb_migrate_data_btn" class="menu_button" style="background:#a855f7; color:white; width:100%; max-width:none; justify-content:center;">🔥 一键清理预设名字 (转化为占位符)</div></div>');
 
     // 然后再渲染其余配置
     const 字段定义 = [
