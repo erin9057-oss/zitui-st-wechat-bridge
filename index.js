@@ -44,7 +44,6 @@ function 获取服务端基础地址() {
 
 // 核心修复：引入 _t 时间戳，防止浏览器缓存 GET 请求，导致备份刷新无效
 async function 请求接口(pathname, options = {}) {
-    // 核心修复：给请求加上时间戳防缓存，确保刷新备份列表一定能拉到最新数据
     const url = pathname.includes('?') ? `${获取服务端基础地址()}${pathname}&_t=${Date.now()}` : `${获取服务端基础地址()}${pathname}?_t=${Date.now()}`;
     
     const response = await fetch(url, {
@@ -163,6 +162,7 @@ function 毫秒转秒输入值(value, fallbackSeconds) {
     }
     return fallbackSeconds;
 }
+
 // === 生图高阶控制区字典 ===
 const igModelDict = {
     api: [
@@ -188,11 +188,9 @@ function 创建生图高阶控制区(主配置) {
     const key = 解析键路径(主配置, ["image_generation", "api_key"], "");
     const ref = 解析键路径(主配置, ["image_generation", "reference_image_path"], "");
     
-    // 🌟 新增：读取 Luma 的参数
     const luma_realm = 解析键路径(主配置, ["image_generation", "luma_realm_id"], "");
     const luma_wos = 解析键路径(主配置, ["image_generation", "luma_wos_session"], "");
 
-    // 使用一个带有 data-key 的 hidden input 偷偷收集单选框的值
     const wrapper = $(`
         <div class="zwb-form-item-full" style="background:rgba(0,0,0,0.2); padding:10px; border-radius:6px; margin: 10px 0; border: 1px solid #444;">
             <div style="margin-bottom: 10px; color: #a855f7; font-weight: bold;">生图配置</div>
@@ -250,7 +248,13 @@ function 渲染主配置表单() {
     if (!当前主配置) return;
     const container = $("#zwb_config_form");
     container.empty();
+    
+    // 🌟 核心UI重组：先把名字和洗盘按钮放在最顶部
+    container.append(创建基础输入块("AI 角色名称", "profile.char_name", 解析键路径(当前主配置, ["profile", "char_name"], "")));
+    container.append(创建基础输入块("你的名称/称呼", "profile.user_name", 解析键路径(当前主配置, ["profile", "user_name"], "")));
+    container.append('<div class="zwb-panel-actions" style="margin: 15px 0 25px 0;"><div id="zwb_migrate_data_btn" class="menu_button" style="background:#a855f7; color:white; width:100%; max-width:none; justify-content:center;">🔥 一键清理预设名字 (转化为占位符)</div></div>');
 
+    // 然后再渲染其余配置
     const 字段定义 = [
         ["对话 API Base URL", "chat_llm.api_base_url", 解析键路径(当前主配置, ["chat_llm", "api_base_url"], "")],
         ["对话 API Key", "chat_llm.api_key", 解析键路径(当前主配置, ["chat_llm", "api_key"], "")],
@@ -272,12 +276,11 @@ function 渲染主配置表单() {
     const ttsBlock = $('<div class="zwb-form-item-full zwb-tts-block"></div>');
     ttsBlock.append('<label>语音轮询节点（最多 10 个）</label>');
     ttsBlock.append('<div id="zwb_tts_credentials_editor" class="zwb-tts-editor" style="margin: 10px 0;"></div>');
-    ttsBlock.append('<div class="zwb-panel-actions"><div id="zwb_add_tts_cred_btn" class="menu_button">新增节点</div><div id="zwb_save_main_config_btn" class="menu_button">保存基础配置</div><div id="zwb_reload_main_config_btn" class="menu_button">重新读取</div></div>');
+    ttsBlock.append('<div class="zwb-panel-actions"><div id="zwb_add_tts_cred_btn" class="menu_button">新增节点</div><div id="zwb_save_main_config_btn" class="menu_button" style="background:#4CAF50;">保存基础配置</div><div id="zwb_reload_main_config_btn" class="menu_button">重新读取</div></div>');
+    
     container.append(ttsBlock);
-
     渲染语音节点编辑器();
 
-    // 🌟 最后：强制触发一次单选框事件，让界面根据当前模式刷新下拉菜单
     $('input[name="zwb_ig_mode_radio"]:checked').trigger('change');
 }
 
@@ -432,7 +435,6 @@ function 格式化世界书条目(entry) {
     return `## ${title}\n\n关键词：${keys || "未填写"}\n\n${content}`.trim();
 }
 
-// 核心修复：世界书排版，消除无效margin，强制等齐，自适应换行
 async function 刷新MEMORYMarkdown与世界书() {
     const memoryMarkdownResult = await 请求接口("/workspace/read", { body: { file_key: "memory_markdown" } });
     $("#zwb_memory_markdown_editor").val(memoryMarkdownResult.data || "");
@@ -590,39 +592,30 @@ function 提取当前User信息() {
     };
 }
 
-
-function 注入Name行(text, name) {
-    const safeName = String(name || "").trim() || "未命名";
-    if (String(text || "").match(/-\s*\*\*Name:\*\*\s*.*/i)) {
-        return String(text).replace(/-\s*\*\*Name:\*\*\s*.*/i, `- **Name:** ${safeName}`);
-    }
-    return `- **Name:** ${safeName}\n\n${String(text || "").trim()}`.trim();
-}
-
-function 合并Soul草稿与现有尾段(newText, currentSoulText, name) {
-    const withName = 注入Name行(newText, name);
+// 🌟 核心清理：不再硬编码注入真名，永远生成占位符
+function 合并Soul草稿与现有尾段(newText, currentSoulText) {
     const marker = "# 动态视觉反馈系统";
     const normalizedCurrent = String(currentSoulText || "");
     const markerIndex = normalizedCurrent.indexOf(marker);
-    if (markerIndex === -1) return withName;
+    if (markerIndex === -1) return newText;
     const tail = normalizedCurrent.slice(markerIndex).trim();
-    const head = withName.split(marker)[0].trim();
+    const head = String(newText || "").split(marker)[0].trim();
     return [head, tail].filter(Boolean).join("\n\n");
 }
 
 function 生成Identity候选文本(role) {
     if (!role) return "未能从当前酒馆上下文读取角色信息。";
-    return `# IDENTITY.md - 自动生成候选\n\n- **Name:** ${role.name || "未命名角色"}\n- **Creature:** 待补充\n- **Vibe:** 待补充\n\n---\n\n## Core Identity\n${role.description || ""}\n\n## Personality Notes\n${role.personality || ""}`.trim();
+    return `# IDENTITY.md - 自动生成候选\n\n- **Name:** {{char}}\n- **Creature:** 待补充\n- **Vibe:** 待补充\n\n---\n\n## Core Identity\n${role.description || ""}\n\n## Personality Notes\n${role.personality || ""}`.trim();
 }
 
 function 生成Soul候选文本(role) {
     if (!role) return "未能从当前酒馆上下文读取角色信息。";
-    return `# SOUL.md - 自动生成候选\n\n- **Name:** ${role.name || "未命名角色"}\n\n---\n\n## 角色设定\n${role.description || ""}\n\n## 性格倾向\n${role.personality || ""}\n\n## 场景设定\n${role.scenario || ""}\n\n## 首条消息参考\n${role.first_mes || ""}\n\n## 示例对话参考\n${role.mes_example || ""}`.trim();
+    return `# SOUL.md - 自动生成候选\n\n- **Name:** {{char}}\n\n---\n\n## 角色设定\n${role.description || ""}\n\n## 性格倾向\n${role.personality || ""}\n\n## 场景设定\n${role.scenario || ""}\n\n## 首条消息参考\n${role.first_mes || ""}\n\n## 示例对话参考\n${role.mes_example || ""}`.trim();
 }
 
 function 生成User候选文本(userInfo) {
     if (!userInfo) return "未能从当前酒馆上下文读取 User 描述。";
-    return `# USER.md - 自动生成候选\n\n- **Name:** ${userInfo.name || "User"}\n\n---\n\n## 你的基础设定\n${userInfo.description || ""}\n\n## 他的参考备注\n这里可以补充你的习惯、边界、称呼偏好、作息、雷点等。`.trim();
+    return `# USER.md - 自动生成候选\n\n- **Name:** {{user}}\n\n---\n\n## 你的基础设定\n${userInfo.description || ""}\n\n## 他的参考备注\n这里可以补充你的习惯、边界、称呼偏好、作息、雷点等。`.trim();
 }
 
 function 格式化单条消息(item, index) {
@@ -757,8 +750,8 @@ async function 读取角色相关内容() {
 
         const role = 提取当前角色信息();
         const userInfo = 提取当前User信息();
-        $("#zwb_character_name_input").val(role?.name || "");
-        $("#zwb_user_name_input").val(userInfo?.name || "");
+        
+        // 🌟 已删除原有的硬编码读取真名逻辑
         $("#zwb_character_preview_editor").val(生成Identity候选文本(role));
         $("#zwb_user_preview_editor").val(生成User候选文本(userInfo));
     } catch (e) {}
@@ -944,24 +937,21 @@ function 绑定按钮事件() {
         当前主配置.tts.credentials.push({ appid: "", token: "", voiceId: "" });
         渲染语音节点编辑器();
     });
+
     // === 生图引擎单选框联动事件 ===
     $("body").on("change", 'input[name="zwb_ig_mode_radio"]', function () {
         const mode = $(this).val();
-        
-        // 1. 同步把值写进隐藏框，让你的 data-key 提取逻辑依然能完美提取到！
         $("#zwb_ig_mode_hidden").val(mode);
 
-        // 2. 动态更新下拉菜单选项
         const $select = $("#zwb_ig_model_select");
-        const currentModel = $select.data("initial") || $select.val(); // 优先读取初始配置
+        const currentModel = $select.data("initial") || $select.val();
         $select.empty();
         igModelDict[mode].forEach(m => {
             const isSelected = (m.value === currentModel) ? "selected" : "";
             $select.append(`<option value="${m.value}" ${isSelected}>${m.text}</option>`);
         });
-        $select.data("initial", ""); // 清空记录，允许以后自由切换
+        $select.data("initial", "");
 
-        // 3. 动态控制 URL、Key 和 Luma 区域的显隐
         if (mode === 'api') {
             $("#zwb_ig_url_block, #zwb_ig_key_block").show();
             $("#zwb_ig_luma_auth").hide();
@@ -970,12 +960,101 @@ function 绑定按钮事件() {
             $("#zwb_ig_url_block, #zwb_ig_key_block, #zwb_ig_luma_auth").hide();
         } else if (mode === 'luma') {
             $("#zwb_ig_url_block, #zwb_ig_luma_auth").show();
-            $("#zwb_ig_key_block").hide(); // Luma 模式不需要常规的 API Key
+            $("#zwb_ig_key_block").hide(); 
             $("#zwb_ig_url_label").text("Luma 反代地址 (端口通常为 8188):");
             if (!$("#zwb_ig_url").val()) $("#zwb_ig_url").val("http://127.0.0.1:8188/v1/chat/completions");
         }
     });
 
+    // === 🌟 核心升级：清扫所有关联旧名字，保护图鉴链接 ===
+    $("body").on("click", "#zwb_migrate_data_btn", async () => {
+        const oldChar = prompt("【第一步】请输入文件中被写死的【旧】角色名（用于查找，如：小白）：");
+        if (!oldChar) return;
+        const oldUser = prompt("请输入文件中被写死的【旧】用户名（用于查找，如：用户）：");
+        if (!oldUser) return;
+        
+        const newChar = prompt(`【第二步】请输入期望生效的【新】角色名（如不改名请重复输入 ${oldChar}）：`, oldChar);
+        if (!newChar) return;
+        const newUser = prompt(`请输入期望生效的【新】用户名（如不改名请重复输入 ${oldUser}）：`, oldUser);
+        if (!newUser) return;
+
+        if (!confirm(`即将执行预设和对话记录清理：\n1. 净化预设文件，将 ${oldChar} 替换为 {{char}}\n2. 对 SOUL.md 进行外科手术，保护图鉴链接\n3. 对话记录仅清理人名，绝不破坏语义\n\n建议先执行备份，确认开始吗？`)) return;
+
+        try {
+            // 🛡️ 1. 净化 IDENTITY 和 USER
+            toastr.info("正在清理 IDENTITY 和 USER...");
+            for (const key of ["identity", "user"]) {
+                let res = await 请求接口("/workspace/read", { body: { file_key: key } });
+                if (!res.data) continue;
+                let text = res.data.split(oldChar).join("{{char}}").split(oldUser).join("{{user}}");
+                await 请求接口("/workspace/save", { body: { file_key: key, data: text } });
+            }
+
+            // 🛡️ 2. 净化 SOUL.md 并引入【行级链接保护机制】
+            toastr.info("正在清理 SOUL.md...");
+            let soulRes = await 请求接口("/workspace/read", { body: { file_key: "soul" } });
+            if (soulRes.data) {
+                const marker = "# 动态视觉反馈系统";
+                const parts = soulRes.data.split(marker);
+                
+                // 上半部分无脑替换
+                let upper = parts[0].split(oldChar).join("{{char}}").split(oldUser).join("{{user}}");
+                let finalSoul = upper;
+                
+                // 下半部分逐行透析
+                if (parts.length > 1) {
+                    const lowerLines = parts[1].split('\n').map(line => {
+                        // 遇到含 http 的行，视作图鉴图片链接，原样放行，绝对不碰！
+                        if (line.includes('http')) return line;
+                        // 普通文本行（比如“某某是一个会发表情包的人”），执行替换
+                        return line.split(oldChar).join("{{char}}").split(oldUser).join("{{user}}");
+                    });
+                    finalSoul += marker + lowerLines.join('\n');
+                }
+                
+                await 请求接口("/workspace/save", { body: { file_key: "soul", data: finalSoul } });
+            }
+
+            // 🛡️ 3. 洗刷历史记忆 (JSONL)
+            toastr.info("正在洗刷记忆数据库...");
+            const listRes = await 请求接口("/memory/list");
+            const allMemories = [...(listRes.data?.full_logs || []), ...(listRes.data?.summary_logs || [])];
+            
+            for (const file of allMemories) {
+                const readRes = await 请求接口("/memory/read", { body: { file_name: file.name } });
+                const payload = readRes.data?.content;
+                if (!payload) continue;
+
+                if (payload.metadata) {
+                    if (payload.metadata.character_name === oldChar) payload.metadata.character_name = newChar;
+                    if (payload.metadata.user_name === oldUser) payload.metadata.user_name = newUser;
+                }
+                
+                for (const item of (payload.items || [])) {
+                    if (item.name === oldChar) item.name = newChar;
+                    if (item.name === oldUser) item.name = newUser;
+                }
+                
+                await 请求接口("/memory/save", { body: { file_name: file.name, metadata: payload.metadata, items: payload.items } });
+            }
+
+            // 🛡️ 4. 将真名写入主配置
+            toastr.info("正在写入新名字配置...");
+            let cfgRes = await 请求接口("/config/main/read");
+            let cfg = cfgRes.data || {};
+            cfg.profile = cfg.profile || {};
+            cfg.profile.char_name = newChar;
+            cfg.profile.user_name = newUser;
+            await 请求接口("/workspace/save", { body: { file_key: "config", format: "json", data: cfg } });
+
+            toastr.success("🎉 预设与对话记录名字整理完美结束！");
+            await 读取基础配置(); 
+            await 读取角色相关内容();
+            await 读取记忆列表();
+        } catch (error) {
+            toastr.error(`洗盘失败：${error.message}`);
+        }
+    });
 
     $("body").on("click", ".zwb-delete-tts-btn", function () {
         当前主配置.tts.credentials.splice(Number($(this).data("tts-index")), 1);
@@ -1002,7 +1081,7 @@ function 绑定按钮事件() {
         await 读取运行配置(); toastr.success("重新读取成功");
     });
 
-    // === 角色与 User ===
+    // === 角色与 User (全面拥抱占位符) ===
     $("body").on("click", "#zwb_generate_identity_btn", () => {
         $("#zwb_character_target_select").val("identity");
         $("#zwb_character_preview_editor").val(生成Identity候选文本(提取当前角色信息()));
@@ -1017,10 +1096,10 @@ function 绑定按钮事件() {
 
     $("body").on("click", "#zwb_save_character_btn", async () => {
         const fileKey = $("#zwb_character_target_select").val();
-        let content = 注入Name行($("#zwb_character_preview_editor").val(), $("#zwb_character_name_input").val());
+        let content = $("#zwb_character_preview_editor").val();
         if (fileKey === "soul") {
             const currentSoul = String($("#zwb_character_current").val().split("【当前 SOUL.md】\n")[1] || "");
-            content = 合并Soul草稿与现有尾段(content, currentSoul, $("#zwb_character_name_input").val());
+            content = 合并Soul草稿与现有尾段(content, currentSoul);
         }
         await 请求接口("/workspace/save", { body: { file_key: fileKey, data: content } });
         await 读取角色相关内容();
@@ -1033,7 +1112,7 @@ function 绑定按钮事件() {
     });
 
     $("body").on("click", "#zwb_save_user_btn", async () => {
-        const content = 注入Name行($("#zwb_user_preview_editor").val(), $("#zwb_user_name_input").val());
+        const content = $("#zwb_user_preview_editor").val();
         await 请求接口("/workspace/save", { body: { file_key: "user", data: content } });
         await 读取角色相关内容(); toastr.success("已保存 USER.md");
     });
@@ -1074,7 +1153,6 @@ function 绑定按钮事件() {
         刷新酒馆聊天显示(); toastr.success("下区已抓取最新聊天");
     });
 
-    // 核心修复：按酒馆记录创建【新微信 Memory 文件】
     $("body").on("click", "#zwb_import_st_to_wechat_btn", async () => {
         const parsed = 解析友好Jsonl文本($("#zwb_st_chat_preview_editor").val());
         if (!parsed.items.length) return toastr.warning("下区没有可识别的消息格式");
@@ -1095,7 +1173,6 @@ function 绑定按钮事件() {
         toastr.success(`成功创建并写入新微信文件：${fn}`);
     });
 
-    // 核心修复：按微信记录创建【新酒馆对话】
     $("body").on("click", "#zwb_import_wechat_memory_to_st_btn", async () => {
         const parsed = 解析友好Jsonl文本($("#zwb_memory_preview_editor").val());
         if (!parsed.items.length) return toastr.warning("上区没有可识别的消息");
@@ -1115,7 +1192,6 @@ function 绑定按钮事件() {
             toastr.warning("未找到新建聊天接口，将强行追加到当前聊天末尾。");
         }
 
-        // 延迟等清屏后写入
         setTimeout(async () => {
             const creator = 获取稳定接口("createChatMessages");
             if (!creator) return toastr.error("酒馆接口不可用");
@@ -1128,11 +1204,10 @@ function 绑定按钮事件() {
         const fn = String($("#zwb_memory_file_input").val() || "").trim();
         if (!fn) return toastr.warning("请选择文件");
         const parsed = 解析友好Jsonl文本($("#zwb_memory_preview_editor").val());
-        await 请求接口("/memory/save", { body: { file_name: fn, metadata: parsed.metadata, items: parsed.items } });
+        await 请求接口("/memory/save", { body: { file_key: "config" /* just placeholder */, file_name: fn, metadata: parsed.metadata, items: parsed.items } });
         toastr.success("上区记忆修改已保存");
     });
 
-    // === 世界书多选 ===
     $("body").on("change", ".zwb-wb-name-checkbox", async function () {
         const sel = [];
         $(".zwb-wb-name-checkbox:checked").each(function() { sel.push($(this).val()); });
