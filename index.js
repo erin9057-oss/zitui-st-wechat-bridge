@@ -2,8 +2,8 @@ import { extension_settings, getContext } from "../../../extensions.js";
 import { saveSettingsDebounced, getRequestHeaders, substituteParams } from "../../../../script.js";
 
 const extensionName = "zitui-st-wechat-bridge";
-const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-
+// 🌟 核心修复：利用 import.meta.url 动态获取脚本真实路由
+const extensionFolderPath = new URL('.', import.meta.url).pathname.replace(/\/$/, '');
 const defaultSettings = {
     local_base_dir: "~/WechatAI/openclaw-weixin",
     enable_http_mode: false,
