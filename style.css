@@ -44,9 +44,6 @@ html.zwb-modal-open {
     font-weight: 600;
 }
 
-/* =========================================
-   🌟 核心修复1：操作按钮组弹性换行，绝对居中，透明背景
-========================================= */
 .zwb-panel-actions {
     display: flex;
     gap: 10px;
@@ -74,9 +71,6 @@ html.zwb-modal-open {
     flex: 1 1 100%;
 }
 
-/* =========================================
-   🌟 核心修复2：记忆文件列表自然横向折行排布，高度自适应
-========================================= */
 .zwb-memory-btn-group {
     display: flex;
     flex-wrap: wrap;
@@ -229,7 +223,6 @@ html.zwb-modal-open {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 14px;
-    margin-bottom: 16px;
 }
 
 .zwb-card,
@@ -285,7 +278,6 @@ html.zwb-modal-open {
     font-weight: 600;
 }
 
-/* 核心修复：大幅增加编辑区的高度，缩小列表高度 */
 .zwb-json-textarea {
     width: 100%;
     box-sizing: border-box;
@@ -356,7 +348,6 @@ html.zwb-modal-open {
     resize: vertical;
 }
 
-/* 核心修复：列表限高，防止过长 */
 .zwb-output-box,
 .zwb-list-box {
     min-height: 60px;
@@ -381,9 +372,6 @@ html.zwb-modal-open {
     line-height: 1.7;
 }
 
-/* =========================================
-   🌟 手机端适配：取消了底栏的强制吸底悬浮，自然滚动到底部
-========================================= */
 @media (max-width: 980px) {
     .zwb-modal-container {
         padding: 0;
@@ -437,7 +425,6 @@ html.zwb-modal-open {
         max-height: 25vh;
     }
 
-    /* 解除锁定，按钮自然流排布在最底，不再遮挡上方输入框 */
     .zwb-panel-actions {
         position: relative;
         padding-top: 8px;
@@ -445,4 +432,210 @@ html.zwb-modal-open {
         background: transparent !important;
         border-top: none;
     }
+}
+
+.zwb-retrofit-panel {
+    background: var(--zwb-accent-soft);
+    padding: 14px;
+    border-radius: 8px;
+    margin-bottom: 14px;
+    border: 1px dashed var(--zwb-accent);
+}
+
+.zwb-retrofit-title {
+    color: var(--zwb-accent);
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.zwb-retrofit-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap; 
+}
+
+.zwb-retrofit-controls .menu_button {
+    white-space: nowrap !important; 
+    margin: 0;
+    padding: 8px 16px;
+    height: auto;
+}
+
+.zwb-retrofit-batch-size {
+    width: 80px;
+    text-align: center;
+}
+
+.zwb-retrofit-info {
+    font-size: 13px;
+    color: var(--zwb-text-subtle);
+}
+
+.zwb-retrofit-progress {
+    font-size: 13px;
+    margin-top: 10px;
+    font-weight: 500;
+}
+
+.zwb-ig-config-panel {
+    background: rgba(0,0,0,0.15);
+    padding: 14px;
+    border-radius: 8px;
+    margin: 14px 0;
+    border: 1px solid var(--zwb-surface-border);
+}
+
+.zwb-ig-title {
+    margin-bottom: 12px;
+    color: var(--zwb-accent);
+    font-weight: bold;
+}
+
+.zwb-ig-radios {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.zwb-ig-radio-label {
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--zwb-text-main);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.zwb-ig-luma-auth {
+    background: var(--zwb-accent-soft);
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px dashed var(--zwb-accent);
+    margin-bottom: 10px;
+}
+
+.zwb-text-success { color: #4CAF50; }
+.zwb-text-warning { color: #ff9800; }
+.zwb-text-danger { color: #f44336; }
+.zwb-text-muted { color: var(--zwb-text-subtle); font-size: 13px; }
+.zwb-empty-state { padding: 12px; color: var(--zwb-text-subtle); font-size: 13px; text-align: center; background: rgba(0,0,0,0.1); border-radius: 6px; }
+
+.zwb-wb-name-label { display: inline-flex; align-items: center; gap: 6px; margin: 0 12px 8px 0; cursor: pointer; font-size: 13px; color: var(--zwb-text-main); }
+.zwb-wb-name-tag { color: var(--zwb-accent); font-weight: bold; }
+.zwb-wb-name-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+
+.zwb-wb-entry-list { max-height: 240px; overflow-y: auto; padding: 10px; border: 1px solid var(--zwb-surface-border); border-radius: 6px; background: rgba(0,0,0,0.15); display: flex; flex-direction: column; gap: 8px; }
+.zwb-wb-entry-label { display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 13px; color: var(--zwb-text-main); width: 100%; }
+.zwb-wb-entry-tag { color: #4CAF50; font-weight: bold; white-space: nowrap; }
+.zwb-wb-entry-keys { font-size: 11px; color: var(--zwb-text-subtle); margin-top: 4px; }
+
+/* =========================================
+   🌟 精准修复图片中指出的上边距丢失问题 
+   (仅追加属性，不破坏任何原有布局机制)
+========================================= */
+
+/* 修复图片中独立堆叠的 Card/Block 之间的拥挤 (如 66710, 66711) */
+.zwb-card,
+.zwb-block {
+    margin-bottom: 16px;
+}
+
+/* 修复图片中直接贴在顶部的标题和描述文字 (如 66712, 66713, 66714, 66715) */
+.zwb-tab-content > label,
+.zwb-tab-content > .zwb-panel-desc,
+.zwb-tab-content > .zwb-text-muted,
+.zwb-tab-content > h3 {
+    display: block;
+    margin-top: 18px;
+    margin-bottom: 10px;
+}
+
+/* 修复图片中"语音轮询节点"缺乏上下推力的问题 (如 66709) */
+.zwb-tts-block {
+    margin-top: 18px;
+    margin-bottom: 16px;
+}
+
+/* =========================================
+   🌟 滑块组件与向量警告框专属样式
+========================================= */
+input[type=range].zwb-slider {
+    -webkit-appearance: none;
+    width: 100%;
+    background: transparent;
+    margin: 8px 0;
+}
+input[type=range].zwb-slider::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    border: 1px solid rgba(0,0,0,0.3);
+}
+input[type=range].zwb-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 18px;
+    width: 18px;
+    border-radius: 50%;
+    background: var(--zwb-accent);
+    cursor: pointer;
+    margin-top: -6px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
+
+.zwb-slider-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.zwb-slider-val-tag {
+    color: var(--zwb-accent);
+    font-weight: bold;
+    background: rgba(0,0,0,0.2);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.zwb-divider {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--zwb-surface-border);
+}
+
+.zwb-ctx-title-box {
+    margin-top: 10px;
+}
+
+.zwb-ctx-title {
+    margin-bottom: 4px !important;
+    color: var(--zwb-accent);
+}
+
+.zwb-ctx-desc {
+    margin-bottom: 12px;
+    line-height: 1.5;
+}
+
+.zwb-vector-notice {
+    margin-top: 14px;
+    padding: 12px;
+    background: rgba(255,193,7,0.1);
+    border: 1px solid rgba(255,193,7,0.3);
+    border-radius: 8px;
+}
+
+.zwb-vector-notice-title {
+    color: #ffc107;
+    font-size: 14px;
+    display: block;
+    margin-bottom: 6px;
+}
+
+.zwb-vector-notice-text {
+    font-size: 13px;
+    color: var(--zwb-text-subtle);
+    line-height: 1.6;
 }
