@@ -479,7 +479,38 @@ async function init(router) {
             data: { restored, skipped },
         });
     });
-}
+
+    // ==========================================
+    // 🌟 核心：放在 init 内部！LLM 后端暗桥代理
+    // ==========================================
+    router.post('/llm/proxy', async (req, res) => {
+        try {
+            const { url, key, model, messages } = req.body;
+            
+            const fetchFn = global.fetch || (await import('node-fetch')).default;
+            const response = await fetchFn(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${key}`
+                },
+                body: JSON.stringify({ model, messages })
+            });
+
+            if (!response.ok) {
+                const errText = await response.text();
+                return res.status(response.status).json({ success: false, error: errText });
+            }
+
+            const data = await response.json();
+            res.json({ success: true, data: data });
+        } catch (error) {
+            console.error("LLM Proxy Error:", error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+} // <--- init 函数在这里才结束！！！
 
 async function exit() {
     return Promise.resolve();
