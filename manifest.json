@@ -1,12 +1,12 @@
 {
-  "display_name": "自推微信酒馆套件（公开测试版）",
+  "display_name": "自推微信酒馆套件",
   "loading_order": 9,
   "requires": [],
   "optional": [],
   "js": "index.js",
   "css": "style.css",
   "author": "PlusXii",
-  "version": "0.2.1-test.1",
-  "description": "同步 SillyTavern 主题样式，移除插件自带视觉皮肤，仅保留布局与响应式修正。公开测试版用于与私有版并行安装验证。",
+  "version": "0.2.1",
+  "description": "同步 SillyTavern 主题样式，移除插件自带视觉皮肤，仅保留布局与响应式修正。",
   "homePage": "https://github.com/erin9057-oss/zitui-st-wechat-bridge"
 }
