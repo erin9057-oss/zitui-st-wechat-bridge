@@ -323,6 +323,7 @@ html.zwb-modal-open {
 }
 
 #zwb_modal_container .zwb-panel-actions,
+#zwb_modal_container .zwb-retrofit-controls,
 .zwb-extension-settings .zwb-panel-actions,
 .zwb-extension-settings .inline-drawer-content .zwb-panel-actions {
     display: grid !important;
@@ -334,6 +335,8 @@ html.zwb-modal-open {
 
 #zwb_modal_container .zwb-panel-actions > .menu_button,
 #zwb_modal_container .zwb-panel-actions > button,
+#zwb_modal_container .zwb-retrofit-controls > .menu_button,
+#zwb_modal_container .zwb-retrofit-controls > button,
 .zwb-extension-settings .zwb-panel-actions > .menu_button,
 .zwb-extension-settings .zwb-panel-actions > button {
     width: 100% !important;
@@ -654,6 +657,7 @@ input[type='range'].zwb-slider {
 
 @media (max-width: 520px) {
     #zwb_modal_container .zwb-panel-actions,
+    #zwb_modal_container .zwb-retrofit-controls,
     .zwb-extension-settings .zwb-panel-actions {
         grid-template-columns: 1fr !important;
     }
