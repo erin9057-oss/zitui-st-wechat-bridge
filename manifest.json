@@ -6,7 +6,7 @@
   "js": "index.js",
   "css": "style.css",
   "author": "PlusXii",
-  "version": "0.2.1",
-  "description": "同步 SillyTavern 主题样式，移除插件自带视觉皮肤，仅保留布局与响应式修正。",
+  "version": "0.2.2",
+  "description": "修复聊天记录与世界书 Tab 的懒加载卡顿、酒馆聊天预览过重、他的日记文件列表未加载，以及世界书刷新入口失效问题。",
   "homePage": "https://github.com/erin9057-oss/zitui-st-wechat-bridge"
 }

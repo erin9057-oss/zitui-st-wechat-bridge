@@ -9,6 +9,13 @@ let 当前运行配置 = null;
 let 当前记忆列表 = null;
 let 当前记忆文件数据 = null;
 let 当前Summary文件数据 = null;
+let 当前酒馆聊天完整Items缓存 = [];
+const ZWB_PREVIEW_RECENT_LIMIT = 80;
+let 记忆列表已加载 = false;
+let 聊天记录Tab已加载 = false;
+let 日记Tab已加载 = false;
+let 世界书Tab已加载 = false;
+
 let 当前传感映射 = {};
 let 当前备份列表 = [];
 
@@ -208,6 +215,51 @@ async function 读取角色相关内容() {
     } catch (e) {}
 }
 
+
+function 生成Items最新预览(items = [], formatter, { limit = ZWB_PREVIEW_RECENT_LIMIT, label = "记录" } = {}) {
+    const list = Array.isArray(items) ? items : [];
+    if (!list.length) return "";
+
+    const previewItems = list.slice(-limit);
+    const offset = Math.max(0, list.length - previewItems.length);
+    const header = list.length > limit
+        ? `【轻量预览】${label}共 ${list.length} 条，当前仅显示最新 ${previewItems.length} 条。\n如需编辑完整内容，请先载入完整文件；请勿直接保存轻量预览。\n\n`
+        : "";
+
+    return header + previewItems.map((item, index) => formatter(item, offset + index + 1)).join("\n\n");
+}
+
+function 设置轻量预览状态(editor, isPreview = true) {
+    editor.data("is-light-preview", Boolean(isPreview));
+}
+
+async function 确保记忆列表已加载({ force = false } = {}) {
+    if (记忆列表已加载 && !force) return;
+    await 读取记忆列表();
+    记忆列表已加载 = true;
+}
+
+async function 加载聊天记录Tab数据({ force = false } = {}) {
+    if (聊天记录Tab已加载 && !force) return;
+
+    await 确保记忆列表已加载({ force });
+
+    // 聊天记录 tab 需要世界书列表，但不应自动打开 full log / ST chat。
+    await 刷新MEMORYMarkdown与世界书().catch(e => console.warn("[ZWB] worldbook lazy load failed:", e));
+
+    世界书Tab已加载 = true;
+    聊天记录Tab已加载 = true;
+}
+
+async function 加载日记Tab数据({ force = false } = {}) {
+    if (日记Tab已加载 && !force) return;
+
+    // 只加载 summary 文件列表，不自动打开第一份日记。
+    await 确保记忆列表已加载({ force });
+    日记Tab已加载 = true;
+}
+
+
 function 渲染记忆列表(data) {
     当前记忆列表 = data || { full_logs: [], summary_logs: [] };
 
@@ -241,15 +293,23 @@ async function 读取记忆列表() {
 async function 打开记忆文件(fileName) {
     const result = await 请求接口("/memory/read", { body: { file_name: fileName } });
     const content = result.data?.content || { metadata: {}, items: [] };
-    
+
     if (content.metadata && (content.metadata.mes !== undefined || content.metadata.send_date !== undefined)) {
         content.items.unshift(content.metadata);
-        content.metadata = {}; 
+        content.metadata = {};
     }
-    
+
     当前记忆文件数据 = content;
     $("#zwb_memory_file_input").val(fileName);
-    $("#zwb_memory_preview_editor").val(友好化Jsonl内容(当前记忆文件数据));
+
+    const preview = 生成Items最新预览(
+        当前记忆文件数据.items || [],
+        格式化单条消息,
+        { limit: ZWB_PREVIEW_RECENT_LIMIT, label: "微信记忆" }
+    );
+
+    $("#zwb_memory_preview_editor").val(preview || "当前文件为空。");
+    设置轻量预览状态($("#zwb_memory_preview_editor"), true);
 }
 
 async function 打开Summary文件(fileName) {
@@ -270,9 +330,14 @@ async function 打开Summary文件(fileName) {
 function 刷新酒馆聊天显示() {
     const editor = $("#zwb_st_chat_preview_editor");
     if (!editor.length) return;
+
     const messages = 获取当前聊天消息列表();
-    if (!messages || messages.length === 0) return editor.val("当前酒馆聊天记录为空，或未选中任何对话。");
-    
+    if (!messages || messages.length === 0) {
+        当前酒馆聊天完整Items缓存 = [];
+        设置轻量预览状态(editor, false);
+        return editor.val("当前酒馆聊天记录为空，或未选中任何对话。");
+    }
+
     const items = messages.map(m => ({
         name: m.name || (m.is_user ? "用户" : "角色"),
         is_user: Boolean(m.is_user || m.role === "user"),
@@ -280,7 +345,17 @@ function 刷新酒馆聊天显示() {
         send_date: m.send_date || new Date().toISOString(),
         mes: m.message || m.mes || m.raw || ""
     })).filter(i => i.mes);
-    editor.val(items.map((item, index) => 格式化单条消息(item, index + 1)).join("\n\n"));
+
+    当前酒馆聊天完整Items缓存 = items;
+
+    const preview = 生成Items最新预览(
+        items,
+        格式化单条消息,
+        { limit: ZWB_PREVIEW_RECENT_LIMIT, label: "酒馆聊天记录" }
+    );
+
+    editor.val(preview || "当前酒馆聊天记录为空。");
+    设置轻量预览状态(editor, true);
 }
 
 async function 刷新MEMORYMarkdown与世界书() {
@@ -392,12 +467,22 @@ async function 刷新备份列表() {
 }
 
 async function 加载全部核心数据() {
-    await Promise.all([ 检测连接状态(), 刷新总览信息(), 读取基础配置(), 读取运行配置(), 读取角色相关内容(), 读取传感映射(), 刷新备份列表() ].map(p => p.catch(e => console.warn(e))));
-    await 读取记忆列表().catch(e => {});
-    if (当前记忆列表?.full_logs?.length) await 打开记忆文件(当前记忆列表.full_logs[0].name).catch(e => {});
-    if (当前记忆列表?.summary_logs?.length) await 打开Summary文件(当前记忆列表.summary_logs[0].name).catch(e => {});
-    await 刷新MEMORYMarkdown与世界书().catch(e => {});
-    刷新酒馆聊天显示();
+    await Promise.all([
+        检测连接状态(),
+        刷新总览信息(),
+        读取基础配置(),
+        读取运行配置(),
+        读取角色相关内容(),
+        读取传感映射(),
+        刷新备份列表(),
+        读取记忆列表(),
+    ].map(p => p.catch(e => console.warn(e))));
+
+    记忆列表已加载 = true;
+
+    $("#zwb_memory_preview_editor").val("请选择左侧微信记忆文件后再加载。");
+    $("#zwb_summary_preview_editor").val("请选择左侧 Summary 文件后再加载。");
+    $("#zwb_st_chat_preview_editor").val("点击“刷新酒馆记录”后再读取当前酒馆聊天。");
 }
 
 function 渲染设置到界面() {
@@ -427,7 +512,15 @@ function 绑定按钮事件() {
     $("body").on("click", ".zwb-tab-btn", function () {
         $(".zwb-tab-btn, .zwb-tab-content").removeClass("active");
         $(this).addClass("active");
-        $(`#${$(this).data("tab")}`).addClass("active");
+
+        const tabId = String($(this).data("tab") || "");
+        $(`#${tabId}`).addClass("active");
+
+        if (tabId === "zwb_tab_memory") {
+            加载聊天记录Tab数据({ force: false }).catch(e => console.warn("[ZWB] memory tab lazy load failed:", e));
+        } else if (tabId === "zwb_tab_summary") {
+            加载日记Tab数据({ force: false }).catch(e => console.warn("[ZWB] summary tab lazy load failed:", e));
+        }
     });
 
     $("body").on("click", "#zwb_ping_btn", async () => { await 检测连接状态(); toastr.success("检测完成"); });
@@ -498,6 +591,9 @@ function 绑定按钮事件() {
             const parsed = 解析Summary文本($("#zwb_summary_preview_editor").val(), 当前Summary文件数据);
             itemsToPatch = parsed.items;
         } else {
+            if ($("#zwb_memory_preview_editor").data("is-light-preview")) {
+                return toastr.warning("当前只是最新记录轻量预览。请先点击“载入完整微信记忆编辑”，再执行修补。");
+            }
             const parsed = 解析友好Jsonl文本($("#zwb_memory_preview_editor").val(), 当前记忆文件数据);
             itemsToPatch = parsed.items;
         }
@@ -530,15 +626,44 @@ function 绑定按钮事件() {
                     $("#zwb_summary_preview_editor").val(lines.join("\n\n"));
                 } else {
                     当前记忆文件数据.items = itemsToPatch;
-                    $("#zwb_memory_preview_editor").val(友好化Jsonl内容(当前记忆文件数据));
+                    const preview = 生成Items最新预览(
+                        当前记忆文件数据.items || [],
+                        格式化单条消息,
+                        { limit: ZWB_PREVIEW_RECENT_LIMIT, label: "微信记忆" }
+                    );
+                    $("#zwb_memory_preview_editor").val(preview || "当前文件为空。");
+                    设置轻量预览状态($("#zwb_memory_preview_editor"), true);
                 }
             }
         });
     });
 
+    $("body").on("click", "#zwb_summary_refresh_btn", async () => {
+        await 读取记忆列表();
+        记忆列表已加载 = true;
+        日记Tab已加载 = true;
+        toastr.success("日记列表已刷新");
+    });
+
+    $("body").on("click", "#zwb_load_full_memory_btn", () => {
+        if (!当前记忆文件数据?.items?.length) return toastr.warning("请先选择微信记忆文件。");
+        const fullText = 友好化Jsonl内容(当前记忆文件数据);
+        $("#zwb_memory_preview_editor")
+            .data("is-light-preview", false)
+            .val(fullText);
+        toastr.success("已载入完整微信记忆，可编辑保存。");
+    });
+
     $("body").on("click", ".zwb-memory-open-btn", async function () { await 打开记忆文件($(this).data("file-name")); toastr.success("读取成功"); });
     $("body").on("click", ".zwb-summary-open-btn", async function () { await 打开Summary文件($(this).data("file-name")); toastr.success("读取成功"); });
-    $("body").on("click", "#zwb_reload_memory_btn", async () => { await 读取记忆列表(); await 刷新MEMORYMarkdown与世界书(); toastr.success("已刷新"); });
+    $("body").on("click", "#zwb_reload_memory_btn", async () => {
+        await 读取记忆列表();
+        await 刷新MEMORYMarkdown与世界书();
+        记忆列表已加载 = true;
+        聊天记录Tab已加载 = true;
+        世界书Tab已加载 = true;
+        toastr.success("记忆列表与世界书已刷新");
+    });
     $("body").on("click", "#zwb_activate_memory_btn", async () => {
         const fn = String($("#zwb_memory_file_input").val() || "").trim();
         if (!fn) return toastr.warning("请选择文件");
@@ -548,6 +673,9 @@ function 绑定按钮事件() {
     $("body").on("click", "#zwb_save_memory_btn", async () => {
         const fn = String($("#zwb_memory_file_input").val() || "").trim();
         if (!fn) return toastr.warning("请选择文件");
+        if ($("#zwb_memory_preview_editor").data("is-light-preview")) {
+            return toastr.warning("当前只是最新记录轻量预览，不能直接保存为完整记忆。");
+        }
         const parsed = 解析友好Jsonl文本($("#zwb_memory_preview_editor").val(), 当前记忆文件数据);
         await 请求接口("/memory/save", { body: { file_name: fn, metadata: parsed.metadata, items: parsed.items } }); toastr.success("保存成功");
     });
@@ -560,7 +688,10 @@ function 绑定按钮事件() {
 
     $("body").on("click", "#zwb_refresh_st_chat_btn", () => { 刷新酒馆聊天显示(); toastr.success("已抓取"); });
     $("body").on("click", "#zwb_import_st_to_wechat_btn", async () => {
-        const parsed = 解析友好Jsonl文本($("#zwb_st_chat_preview_editor").val(), null);
+        const stFullText = 当前酒馆聊天完整Items缓存?.length
+            ? 当前酒馆聊天完整Items缓存.map((item, index) => 格式化单条消息(item, index + 1)).join("\n\n")
+            : String($("#zwb_st_chat_preview_editor").val() || "");
+        const parsed = 解析友好Jsonl文本(stFullText, null);
         if (!parsed.items.length) return toastr.warning("没有可识别的消息");
         let defaultName = `ST_Import_${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.jsonl`;
         let fn = prompt("请输入新微信文件名：", defaultName);
@@ -572,6 +703,9 @@ function 绑定按钮事件() {
         await 打开记忆文件(fn); await 读取记忆列表(); toastr.success("导入成功");
     });
     $("body").on("click", "#zwb_import_wechat_memory_to_st_btn", async () => {
+        if ($("#zwb_memory_preview_editor").data("is-light-preview")) {
+            return toastr.warning("当前只是最新记录轻量预览，请不要用预览片段导入酒馆。");
+        }
         const parsed = 解析友好Jsonl文本($("#zwb_memory_preview_editor").val(), 当前记忆文件数据);
         if (!parsed.items.length) return toastr.warning("没有可识别的消息");
         const converted = parsed.items.map(i => ({ name: i.name, is_user: Boolean(i.is_user), is_system: Boolean(i.is_system), role: i.is_system ? "system" : (i.is_user ? "user" : "assistant"), message: i.mes }));
