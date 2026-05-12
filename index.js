@@ -11,6 +11,10 @@ let 当前记忆文件数据 = null;
 let 当前Summary文件数据 = null;
 let 当前酒馆聊天完整Items缓存 = [];
 const ZWB_PREVIEW_RECENT_LIMIT = 80;
+const ZWB_PAGE_SIZE = 80;
+let 当前微信记忆分页 = { page: 0, pageSize: ZWB_PAGE_SIZE };
+let 当前酒馆聊天分页 = { page: 0, pageSize: ZWB_PAGE_SIZE };
+
 let 记忆列表已加载 = false;
 let 聊天记录Tab已加载 = false;
 let 日记Tab已加载 = false;
@@ -233,6 +237,117 @@ function 设置轻量预览状态(editor, isPreview = true) {
     editor.data("is-light-preview", Boolean(isPreview));
 }
 
+
+function 获取分页范围(items = [], state = { page: 0, pageSize: ZWB_PAGE_SIZE }) {
+    const total = Array.isArray(items) ? items.length : 0;
+    const pageSize = Math.max(1, Number(state.pageSize || ZWB_PAGE_SIZE));
+    const pageCount = Math.max(1, Math.ceil(total / pageSize));
+    const page = Math.min(Math.max(0, Number(state.page || 0)), pageCount - 1);
+    state.page = page;
+    state.pageSize = pageSize;
+
+    const start = page * pageSize;
+    const end = Math.min(total, start + pageSize);
+
+    return { total, page, pageSize, pageCount, start, end };
+}
+
+function 设置最后一页(items = [], state = { page: 0, pageSize: ZWB_PAGE_SIZE }) {
+    const total = Array.isArray(items) ? items.length : 0;
+    const pageSize = Math.max(1, Number(state.pageSize || ZWB_PAGE_SIZE));
+    state.pageSize = pageSize;
+    state.page = Math.max(0, Math.ceil(total / pageSize) - 1);
+}
+
+function 渲染微信记忆当前页() {
+    const editor = $("#zwb_memory_preview_editor");
+    if (!editor.length) return;
+
+    const items = 当前记忆文件数据?.items || [];
+    const range = 获取分页范围(items, 当前微信记忆分页);
+    const pageItems = items.slice(range.start, range.end);
+
+    const header = [
+        `【分页编辑】微信记忆共 ${range.total} 条，当前第 ${range.page + 1}/${range.pageCount} 页。`,
+        `本页范围：${range.total ? range.start + 1 : 0} - ${range.end}，每页 ${range.pageSize} 条。`,
+        `翻页与保存前会尝试同步当前页修改。`,
+        ""
+    ].join("\n");
+
+    editor.val(header + pageItems.map((item, idx) => 格式化单条消息(item, range.start + idx + 1)).join("\n\n"));
+    editor.data("is-light-preview", false);
+    editor.data("paged-editor", true);
+
+    $("#zwb_memory_page_info").text(`第 ${range.page + 1}/${range.pageCount} 页｜${range.start + 1}-${range.end}/${range.total}`);
+}
+
+function 同步微信记忆当前页编辑() {
+    const editor = $("#zwb_memory_preview_editor");
+    if (!editor.length || !当前记忆文件数据?.items) return true;
+
+    if (!editor.data("paged-editor")) return true;
+
+    const items = 当前记忆文件数据.items || [];
+    const range = 获取分页范围(items, 当前微信记忆分页);
+    const raw = String(editor.val() || "");
+
+    const body = raw.replace(/^【分页编辑】[\s\S]*?\n\n/, "");
+    const parsed = 解析友好Jsonl文本(body, { metadata: 当前记忆文件数据.metadata || {}, items: items.slice(range.start, range.end) });
+
+    if (!parsed.items || parsed.items.length === 0) {
+        toastr.warning("当前页没有解析出可保存记录，已取消同步。");
+        return false;
+    }
+
+    当前记忆文件数据.items.splice(range.start, range.end - range.start, ...parsed.items);
+    return true;
+}
+
+function 渲染酒馆聊天当前页() {
+    const editor = $("#zwb_st_chat_preview_editor");
+    if (!editor.length) return;
+
+    const items = 当前酒馆聊天完整Items缓存 || [];
+    const range = 获取分页范围(items, 当前酒馆聊天分页);
+    const pageItems = items.slice(range.start, range.end);
+
+    const header = [
+        `【分页编辑】酒馆聊天共 ${range.total} 条，当前第 ${range.page + 1}/${range.pageCount} 页。`,
+        `本页范围：${range.total ? range.start + 1 : 0} - ${range.end}，每页 ${range.pageSize} 条。`,
+        `导入微信时会使用完整缓存，不只导入当前页。`,
+        ""
+    ].join("\n");
+
+    editor.val(header + pageItems.map((item, idx) => 格式化单条消息(item, range.start + idx + 1)).join("\n\n"));
+    editor.data("is-light-preview", false);
+    editor.data("paged-editor", true);
+
+    $("#zwb_st_chat_page_info").text(`第 ${range.page + 1}/${range.pageCount} 页｜${range.start + 1}-${range.end}/${range.total}`);
+}
+
+function 同步酒馆聊天当前页编辑() {
+    const editor = $("#zwb_st_chat_preview_editor");
+    if (!editor.length || !当前酒馆聊天完整Items缓存) return true;
+
+    if (!editor.data("paged-editor")) return true;
+
+    const items = 当前酒馆聊天完整Items缓存 || [];
+    const range = 获取分页范围(items, 当前酒馆聊天分页);
+    const raw = String(editor.val() || "");
+
+    const body = raw.replace(/^【分页编辑】[\s\S]*?\n\n/, "");
+    const parsed = 解析友好Jsonl文本(body, { metadata: {}, items: items.slice(range.start, range.end) });
+
+    if (!parsed.items || parsed.items.length === 0) {
+        toastr.warning("当前页没有解析出可导入记录，已取消同步。");
+        return false;
+    }
+
+    当前酒馆聊天完整Items缓存.splice(range.start, range.end - range.start, ...parsed.items);
+    return true;
+}
+
+
 async function 确保记忆列表已加载({ force = false } = {}) {
     if (记忆列表已加载 && !force) return;
     await 读取记忆列表();
@@ -302,14 +417,8 @@ async function 打开记忆文件(fileName) {
     当前记忆文件数据 = content;
     $("#zwb_memory_file_input").val(fileName);
 
-    const preview = 生成Items最新预览(
-        当前记忆文件数据.items || [],
-        格式化单条消息,
-        { limit: ZWB_PREVIEW_RECENT_LIMIT, label: "微信记忆" }
-    );
-
-    $("#zwb_memory_preview_editor").val(preview || "当前文件为空。");
-    设置轻量预览状态($("#zwb_memory_preview_editor"), true);
+    设置最后一页(当前记忆文件数据.items || [], 当前微信记忆分页);
+    渲染微信记忆当前页();
 }
 
 async function 打开Summary文件(fileName) {
@@ -334,7 +443,9 @@ function 刷新酒馆聊天显示() {
     const messages = 获取当前聊天消息列表();
     if (!messages || messages.length === 0) {
         当前酒馆聊天完整Items缓存 = [];
+        editor.removeData("paged-editor");
         设置轻量预览状态(editor, false);
+        $("#zwb_st_chat_page_info").text("未分页");
         return editor.val("当前酒馆聊天记录为空，或未选中任何对话。");
     }
 
@@ -348,14 +459,8 @@ function 刷新酒馆聊天显示() {
 
     当前酒馆聊天完整Items缓存 = items;
 
-    const preview = 生成Items最新预览(
-        items,
-        格式化单条消息,
-        { limit: ZWB_PREVIEW_RECENT_LIMIT, label: "酒馆聊天记录" }
-    );
-
-    editor.val(preview || "当前酒馆聊天记录为空。");
-    设置轻量预览状态(editor, true);
+    设置最后一页(当前酒馆聊天完整Items缓存, 当前酒馆聊天分页);
+    渲染酒馆聊天当前页();
 }
 
 async function 刷新MEMORYMarkdown与世界书() {
@@ -647,11 +752,39 @@ function 绑定按钮事件() {
 
     $("body").on("click", "#zwb_load_full_memory_btn", () => {
         if (!当前记忆文件数据?.items?.length) return toastr.warning("请先选择微信记忆文件。");
-        const fullText = 友好化Jsonl内容(当前记忆文件数据);
-        $("#zwb_memory_preview_editor")
-            .data("is-light-preview", false)
-            .val(fullText);
-        toastr.success("已载入完整微信记忆，可编辑保存。");
+        设置最后一页(当前记忆文件数据.items || [], 当前微信记忆分页);
+        渲染微信记忆当前页();
+        toastr.success("已启用分页编辑。可翻页修改，保存时会写回完整记忆。");
+    });
+
+    $("body").on("click", "#zwb_memory_page_prev", () => {
+        if (!当前记忆文件数据?.items?.length) return toastr.warning("请先打开微信记忆文件。");
+        if (!同步微信记忆当前页编辑()) return;
+        当前微信记忆分页.page = Math.max(0, 当前微信记忆分页.page - 1);
+        渲染微信记忆当前页();
+    });
+
+    $("body").on("click", "#zwb_memory_page_next", () => {
+        if (!当前记忆文件数据?.items?.length) return toastr.warning("请先打开微信记忆文件。");
+        if (!同步微信记忆当前页编辑()) return;
+        const range = 获取分页范围(当前记忆文件数据.items, 当前微信记忆分页);
+        当前微信记忆分页.page = Math.min(range.pageCount - 1, 当前微信记忆分页.page + 1);
+        渲染微信记忆当前页();
+    });
+
+    $("body").on("click", "#zwb_st_chat_page_prev", () => {
+        if (!当前酒馆聊天完整Items缓存?.length) return toastr.warning("请先刷新酒馆记录。");
+        if (!同步酒馆聊天当前页编辑()) return;
+        当前酒馆聊天分页.page = Math.max(0, 当前酒馆聊天分页.page - 1);
+        渲染酒馆聊天当前页();
+    });
+
+    $("body").on("click", "#zwb_st_chat_page_next", () => {
+        if (!当前酒馆聊天完整Items缓存?.length) return toastr.warning("请先刷新酒馆记录。");
+        if (!同步酒馆聊天当前页编辑()) return;
+        const range = 获取分页范围(当前酒馆聊天完整Items缓存, 当前酒馆聊天分页);
+        当前酒馆聊天分页.page = Math.min(range.pageCount - 1, 当前酒馆聊天分页.page + 1);
+        渲染酒馆聊天当前页();
     });
 
     $("body").on("click", ".zwb-memory-open-btn", async function () { await 打开记忆文件($(this).data("file-name")); toastr.success("读取成功"); });
@@ -673,11 +806,15 @@ function 绑定按钮事件() {
     $("body").on("click", "#zwb_save_memory_btn", async () => {
         const fn = String($("#zwb_memory_file_input").val() || "").trim();
         if (!fn) return toastr.warning("请选择文件");
-        if ($("#zwb_memory_preview_editor").data("is-light-preview")) {
-            return toastr.warning("当前只是最新记录轻量预览，不能直接保存为完整记忆。");
-        }
-        const parsed = 解析友好Jsonl文本($("#zwb_memory_preview_editor").val(), 当前记忆文件数据);
-        await 请求接口("/memory/save", { body: { file_name: fn, metadata: parsed.metadata, items: parsed.items } }); toastr.success("保存成功");
+        if (!同步微信记忆当前页编辑()) return;
+        await 请求接口("/memory/save", {
+            body: {
+                file_name: fn,
+                metadata: 当前记忆文件数据?.metadata || {},
+                items: 当前记忆文件数据?.items || [],
+            }
+        });
+        toastr.success("保存成功");
     });
     $("body").on("click", "#zwb_save_summary_btn", async () => {
         const fn = String($("#zwb_summary_file_input").val() || "").trim();
@@ -688,6 +825,7 @@ function 绑定按钮事件() {
 
     $("body").on("click", "#zwb_refresh_st_chat_btn", () => { 刷新酒馆聊天显示(); toastr.success("已抓取"); });
     $("body").on("click", "#zwb_import_st_to_wechat_btn", async () => {
+        if (!同步酒馆聊天当前页编辑()) return;
         const stFullText = 当前酒馆聊天完整Items缓存?.length
             ? 当前酒馆聊天完整Items缓存.map((item, index) => 格式化单条消息(item, index + 1)).join("\n\n")
             : String($("#zwb_st_chat_preview_editor").val() || "");
@@ -703,10 +841,11 @@ function 绑定按钮事件() {
         await 打开记忆文件(fn); await 读取记忆列表(); toastr.success("导入成功");
     });
     $("body").on("click", "#zwb_import_wechat_memory_to_st_btn", async () => {
-        if ($("#zwb_memory_preview_editor").data("is-light-preview")) {
-            return toastr.warning("当前只是最新记录轻量预览，请不要用预览片段导入酒馆。");
-        }
-        const parsed = 解析友好Jsonl文本($("#zwb_memory_preview_editor").val(), 当前记忆文件数据);
+        if (!同步微信记忆当前页编辑()) return;
+        const parsed = {
+            metadata: 当前记忆文件数据?.metadata || {},
+            items: 当前记忆文件数据?.items || [],
+        };
         if (!parsed.items.length) return toastr.warning("没有可识别的消息");
         const converted = parsed.items.map(i => ({ name: i.name, is_user: Boolean(i.is_user), is_system: Boolean(i.is_system), role: i.is_system ? "system" : (i.is_user ? "user" : "assistant"), message: i.mes }));
         if (!confirm(`将创建一个【新的酒馆聊天室】并导入 ${converted.length} 条消息。确认吗？`)) return;
